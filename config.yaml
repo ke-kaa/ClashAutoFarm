@@ -1,0 +1,13 @@
+timings:
+  scout_wait: 6.0
+  attack_duration: 40
+  reconnect_wait: 10
+  hero_ability_activate_after_deployment: 20
+
+regions:
+  gold_loot:
+  elixir_loot: 
+  dark_loot: 
+  wifi_icon:
+
+thresholds:
