@@ -9,9 +9,10 @@ dependencies = [
     "loguru",
     "mss",
     "numpy",
-    "opencv-python",
+    "opencv-python>=4.13.0.92",
     "pillow",
     "pyautogui",
     "pytesseract",
     "pyyaml",
+    "tesseract>=0.1.3",
 ]

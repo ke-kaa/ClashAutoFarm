@@ -11,3 +11,46 @@ regions:
   wifi_icon:
 
 thresholds:
+  8:
+    gold_elixir_total: 200000
+    dark_elixir: 1000
+  
+  9:
+    gold_elixir_total: 500000
+    dark_elixir: 1200
+
+  10:
+    gold_elixir_total: 600000
+    dark_elixir: 2000
+
+  11:
+    gold_elixir_total: 800000
+    dark_elixir: 3000
+
+  12:
+    gold_elixir_total: 1100000
+    dark_elixir: 5000
+
+  13:
+    gold_elixir_total: 1400000
+    dark_elixir: 6000
+
+  14:
+    gold_elixir_total: 1600000
+    dark_elixir: 7000
+
+  15:
+    gold_elixir_total: 1700000
+    dark_elixir: 8000
+
+  16:
+    gold_elixir_total: 1850000
+    dark_elixir: 9000
+
+  17:
+    gold_elixir_total: 2000000
+    dark_elixir: 10000
+  
+  18:
+    gold_elixir_total: 240000
+    dark_elixir: 10000
