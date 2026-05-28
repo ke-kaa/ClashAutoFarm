@@ -1,23 +1,22 @@
-import mss 
-import os
-import time
-from pathlib import Path
+"""
+vision/capture.py — Fast screen capture using mss.
+"""
 
-def capture(capture_region, mss_object):
-    base_dir = str(Path(__file__).resolve().parent.parent)
-    file_save_path = os.path.join(base_dir, 'mss_captures')
-    os.makedirs(file_save_path, exist_ok=True)
-    
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    microseconds = int((time.time() % 1) * 1000000)
-    file_name = f'ss_{timestamp}_{microseconds:06d}.png'
+import mss
+import numpy as np
+import cv2
 
-    full_output_path = os.path.join(file_save_path, file_name)
-    sct_img = mss_object.grab(capture_region)
-    mss.tools.to_png(sct_img.rgb, sct_img.size, output=full_output_path)
-
-    return full_output_path
-        
+_sct = mss.mss()
 
 
-    
+def grab(region=None):
+    """Capture a screen region and return it as a BGR numpy array."""
+    monitor = region or _sct.monitors[1]
+    sct_img = _sct.grab(monitor)
+    frame = np.array(sct_img)
+    return cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+
+
+def save_screenshot(img, path):
+    """Save a numpy image to disk for debugging."""
+    cv2.imwrite(path, img)
