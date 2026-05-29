@@ -7,7 +7,8 @@ import re
 from vision.preprocess import to_grayscale, upscale, threshold, crop, invert
 
 
-TESSERACT_CONFIG = "--psm 7 -c tessedit_char_whitelist=0123456789"
+TESSERACT_CONFIG_SINGLE = "--psm 7 -c tessedit_char_whitelist=0123456789"
+TESSERACT_CONFIG_BLOCK = "--psm 6 -c tessedit_char_whitelist=0123456789"
 
 
 def _parse_number(text):
@@ -29,30 +30,45 @@ def read_number(img):
     gray = to_grayscale(img)
     scaled = upscale(gray, factor=3)
     binary = threshold(scaled, val=180)
-    text = pytesseract.image_to_string(binary, config=TESSERACT_CONFIG)
+    text = pytesseract.image_to_string(binary, config=TESSERACT_CONFIG_SINGLE)
     return _parse_number(text)
 
 
 def read_loot(screen, regions):
     """
-    Read gold, elixir, and dark elixir from a full screenshot.
+    Read gold, elixir, and dark elixir from a single loot region.
+
+    Tesseract reads all three numbers at once from one crop.
+    The result is split by newlines — line 0 = gold, 1 = elixir, 2 = dark.
 
     Parameters
     ----------
     screen  : numpy array (BGR) — full screenshot from grab()
-    regions : dict with keys 'gold_loot', 'elixir_loot', 'dark_loot',
-              each mapping to an (x, y, w, h) tuple
+    regions : dict with key 'loot_region' mapping to an (x, y, w, h) list
 
     Returns
     -------
     dict with keys 'gold', 'elixir', 'dark_elixir', values are ints (-1 on failure)
     """
+    loot_region = regions.get("loot_region")
+    if not loot_region:
+        return {"gold": -1, "elixir": -1, "dark_elixir": -1}
+
+    cropped = crop(screen, loot_region)
+    gray = to_grayscale(cropped)
+    scaled = upscale(gray, factor=3)
+    binary = threshold(scaled, val=180)
+    text = pytesseract.image_to_string(binary, config=TESSERACT_CONFIG_BLOCK)
+
+    lines = [line.strip() for line in text.strip().split("\n") if line.strip()]
+    keys = ["gold", "elixir", "dark_elixir"]
+
     result = {}
-    for key, name in [("gold", "gold_loot"), ("elixir", "elixir_loot"), ("dark_elixir", "dark_loot")]:
-        region = regions.get(name)
-        if region:
-            cropped = crop(screen, region)
-            result[key] = read_number(cropped)
+    for i, key in enumerate(keys):
+        if i < len(lines):
+            result[key] = _parse_number(lines[i])
         else:
             result[key] = -1
+
     return result
+
