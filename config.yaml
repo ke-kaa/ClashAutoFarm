@@ -8,58 +8,56 @@ timings:
   result_screen_wait: 14
 
 regions:
-  gold_loot:
-  elixir_loot:
-  dark_loot:
+  loot_region:
+    (122, 240, 93, 99)
   wifi_icon:
 
 camera:
-  start: [770, 409]
-  end: [1081, 829]
+  start: [802, 529]
+  end: [106, 862]
 
 deploy:
   troops:
     - name: dragons
       type: drag
-      slot: [304, 906]
-      drag_start: [847, 198]
-      drag_end: [268, 653]
+      slot: [309, 911]
+      drag_start: [851, 251]
+      drag_end: [277, 636]
       duration: 1.5
 
     - name: siege
       type: click
-      slot: [404, 905]
-      target: [572, 420]
+      slot: [412, 905]
+      target: [567, 424]
 
   heroes:
     - name: hero_1
-      slot: [513, 900]
-      target: [572, 420]
+      slot: [509, 900]
+      target: [567, 420]
 
     - name: hero_2
-      slot: [598, 900]
-      target: [572, 420]
+      slot: [600, 900]
+      target: [567, 420]
 
     - name: hero_3
-      slot: [694, 906]
-      target: [572, 420]
+      slot: [701, 906]
+      target: [567, 420]
 
     - name: hero_4
-      slot: [787, 906]
-      target: [572, 420]
+      slot: [786, 906]
+      target: [567, 420]
 
   spells:
     - name: bat_spell
-      slot: [860, 906]
-      target: [572, 420]
+      slot: [893, 906]
+      target: [567, 420]
       count: 11
 
   hero_abilities:
-    - [404, 900]
-    - [513, 900]
-    - [598, 900]
-    - [694, 906]
-    - [787, 906]
+    - [509, 900]
+    - [600, 900]
+    - [701, 900]
+    - [786, 906]
 
 thresholds:
   8:
