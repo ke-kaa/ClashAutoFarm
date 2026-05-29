@@ -2,19 +2,70 @@ timings:
   scout_wait: 6.0
   attack_duration: 40
   reconnect_wait: 10
+  match_wait: 8
+  troop_engage_wait: 10
   hero_ability_activate_after_deployment: 20
+  result_screen_wait: 14
 
 regions:
   gold_loot:
-  elixir_loot: 
-  dark_loot: 
+  elixir_loot:
+  dark_loot:
   wifi_icon:
+
+camera:
+  start: [770, 409]
+  end: [1081, 829]
+
+deploy:
+  troops:
+    - name: dragons
+      type: drag
+      slot: [304, 906]
+      drag_start: [847, 198]
+      drag_end: [268, 653]
+      duration: 1.5
+
+    - name: siege
+      type: click
+      slot: [404, 905]
+      target: [572, 420]
+
+  heroes:
+    - name: hero_1
+      slot: [513, 900]
+      target: [572, 420]
+
+    - name: hero_2
+      slot: [598, 900]
+      target: [572, 420]
+
+    - name: hero_3
+      slot: [694, 906]
+      target: [572, 420]
+
+    - name: hero_4
+      slot: [787, 906]
+      target: [572, 420]
+
+  spells:
+    - name: bat_spell
+      slot: [860, 906]
+      target: [572, 420]
+      count: 11
+
+  hero_abilities:
+    - [404, 900]
+    - [513, 900]
+    - [598, 900]
+    - [694, 906]
+    - [787, 906]
 
 thresholds:
   8:
     gold_elixir_total: 200000
     dark_elixir: 1000
-  
+
   9:
     gold_elixir_total: 500000
     dark_elixir: 1200
@@ -50,7 +101,7 @@ thresholds:
   17:
     gold_elixir_total: 2000000
     dark_elixir: 10000
-  
+
   18:
     gold_elixir_total: 240000
     dark_elixir: 10000

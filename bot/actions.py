@@ -71,6 +71,16 @@ def wait_for_match(seconds=8):
     wait(seconds)
 
 
+def click_next(x=1350, y=880):
+    """Skip the current base during scouting."""
+    click(x, y)
+
+
+def click_reconnect(x=700, y=450):
+    """Dismiss the reconnect popup."""
+    click(x, y)
+
+
 
 def zoom_in(amount=-10000):
     """Zoom the camera all the way in."""
