@@ -32,7 +32,7 @@ def threshold_otsu(img):
 
 def crop(img, region):
     """Crop a region from an image. Region is (x, y, w, h)."""
-    x, y, w, h = region
+    x, y, w, h = map(int, region)
     return img[y:y+h, x:x+w]
 
 

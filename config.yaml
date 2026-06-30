@@ -4,60 +4,59 @@ timings:
   reconnect_wait: 10
   match_wait: 8
   troop_engage_wait: 10
-  hero_ability_activate_after_deployment: 20
+  hero_ability_activate_after_deployment: 15
   result_screen_wait: 14
 
 regions:
-  loot_region:
-    (122, 240, 93, 99)
-  wifi_icon:
+  loot_region: [60, 230, 160, 160]
+  wifi_icon: [700, 470, 200, 130]
 
 camera:
-  start: [802, 529]
-  end: [106, 862]
+  start: [682, 483]
+  end: [1097, 756]
 
 deploy:
   troops:
     - name: dragons
       type: drag
-      slot: [309, 911]
-      drag_start: [851, 251]
-      drag_end: [277, 636]
+      slot: [256, 905]
+      drag_start: [775, 182]
+      drag_end: [162, 636]
       duration: 1.5
 
     - name: siege
       type: click
-      slot: [412, 905]
-      target: [567, 424]
+      slot: [370, 905]
+      target: [493, 402]
 
   heroes:
     - name: hero_1
-      slot: [509, 900]
-      target: [567, 420]
+      slot: [474, 900]
+      target: [493, 402]
 
     - name: hero_2
-      slot: [600, 900]
-      target: [567, 420]
+      slot: [572, 900]
+      target: [493, 402]
 
     - name: hero_3
-      slot: [701, 906]
-      target: [567, 420]
+      slot: [661, 906]
+      target: [493, 402]
 
     - name: hero_4
-      slot: [786, 906]
-      target: [567, 420]
+      slot: [770, 906]
+      target: [493, 402]
 
   spells:
     - name: bat_spell
-      slot: [893, 906]
+      slot: [870, 906]
       target: [567, 420]
       count: 11
 
   hero_abilities:
-    - [509, 900]
-    - [600, 900]
-    - [701, 900]
-    - [786, 906]
+    - [474, 900]
+    - [572, 900]
+    - [661, 900]
+    - [770, 906]
 
 thresholds:
   8:
