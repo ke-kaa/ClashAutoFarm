@@ -10,7 +10,7 @@ from pathlib import Path
 from loguru import logger
 from pynput import keyboard
 from vision import templates
-from bot.config_loader import load_and_validate
+from bot.config_loader import load_and_validate, validate_treasure_hunt
 from bot.state_machine import StateMachine
 
 TEMPLATES_DIR = "/home/kaku/Documents/PersonalProjects/ClashAutoFarm/assets/templates/"
@@ -50,6 +50,7 @@ def main():
     parser = argparse.ArgumentParser(description="Clash of Clans Auto Farm Bot")
     parser.add_argument("--townhall-level", type=int, default=10, choices=range(8, 19),
                         help="Your townhall level (8-18, default: 10)")
+    parser.add_argument("--treasure-hunt", action="store_true", help="Enable treasure hunt claim handling at the end of battle")
     args = parser.parse_args()
 
     _setup_logging()
@@ -58,7 +59,15 @@ def main():
 
     templates_dict = templates.load_template(TEMPLATES_DIR)
     logger.info("Townhall level: {}", args.townhall_level)
-    machine = StateMachine(templates_dict, townhall_level=args.townhall_level)
+    if args.treasure_hunt:
+        logger.info("Treasure hunt claim handling: ENABLED")
+        errs = validate_treasure_hunt(config)
+        if errs: 
+            for e in errs:
+                logger.error(" . {}", e)
+            sys.exit(1)
+
+    machine = StateMachine(templates_dict, townhall_level=args.townhall_level, treasure_hunt=args.treasure_hunt,)
 
     listener = keyboard.Listener(on_press=_on_key_press)
     listener.start()

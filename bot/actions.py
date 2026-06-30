@@ -152,6 +152,22 @@ def wait_for_result_screen(seconds=14):
     wait(seconds)
 
 
+def claim_treasure_reward(cfg):
+    """
+    Treasure hunt claim sequence.
+    cfg=config['treasure_hunt']
+    Tap Claim Reward -> N advanced taps through reward screen -> wait -> 1 final tap.
+    """
+    click(*cfg["claim_button"])
+    _random_delay()
+    for pos in cfg["advanced_tap"]:
+        click(*pos)
+        _random_delay()
+    wait(*cfg["final_click_delay"])
+    click(*cfg["final_click"])
+
+    
+
 def auto_farm():
     """Execute a complete attack cycle."""
     click_attack_button()

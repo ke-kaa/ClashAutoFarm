@@ -105,7 +105,17 @@ thresholds:
     dark_elixir: 10000
 
 detection:
-  scout_screen_timeout: 12
+  scout_screen_timeout: 12i
   battle_end_timeout: 60
   scout_screen_timeout: 20
   poll_interval: 0.5
+
+treasure_hunt:
+  claim_button: []
+  advanced_clicks: 
+    - []
+    - []
+    - []
+    - []
+  final_click_delay: 3.5
+  final_click: []

@@ -38,12 +38,13 @@ class State(Enum):
 
 
 class StateMachine:
-    def __init__(self, templates_dict, townhall_level=10):
+    def __init__(self, templates_dict, townhall_level=10, treasure_hunt=False):
         self.state = State.IDLE
         self.templates = templates_dict
         self.townhall_level = townhall_level
         self.config = load_config()
         self._state_entered_at = time.time()
+        self.treasure_hunt = treasure_hunt
 
     def transition(self, new_state):
         """Transition to a new state."""
@@ -208,10 +209,23 @@ class StateMachine:
         pass
 
     def _handle_battle_end(self):
-        """BATTLE_END → end battle → return home → IDLE."""
-        actions.end_battle()
-        actions.return_home()
+        """BATTLE_END → end battle → (claim reward | return home) → IDLE."""
         det = self.config.get("detection", {})
+        if self.treasure_hunt:
+            ok, screen = self._wait_for(
+            lambda s: tmpl.is_claim_reward(s, self.templates) or tmpl.is_home_screen(s, self.templates),
+            timeout=det["home_screen_timeout"], poll=det["poll_interval"],
+            )
+            if ok and tmpl.is_claim_reward(screen, self.templates):
+                logger.info("Treasure Hunt chest earned — claiming reward")
+                actions.claim_treasure_reward(self.config["treasure_hunt"])
+                # claim sequence ends on the village home — no return_home() needed
+            else:
+                actions.return_home()
+        else:
+            actions.return_home()
+
+        # Confirm we actually landed home (covers both the claim path and a normal return).
         ok, screen = self._wait_for(
             lambda s: tmpl.is_home_screen(s, self.templates),
             timeout=det["home_screen_timeout"],

@@ -45,3 +45,7 @@ def is_home_screen(screen, templates, threshold=0.3):
 def is_battle_over(screen, templates, threshold=0.3):
     """Check if the battle over screen is visible."""
     return find(screen, templates["battle_over"], threshold=threshold)
+
+def is_claim_reward(screen, templates, threshold=0.3):
+    """Check if the claim reward popup is visible."""
+    return find(screen, templates["claim_reward"], threshold=threshold)

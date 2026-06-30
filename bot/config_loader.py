@@ -117,3 +117,23 @@ def meets_loot_threshold(townhall_level, loot):
         return True
 
     return (loot["gold"] + loot["elixir"]) >= th["gold_elixir_total"]
+
+def validate_treasure_hunt(config):
+    """Validate treasure_hunt section"""
+    errors = []
+    th = config.get("treasure_hunt", {})
+    if not th:
+        return ["--treasure-hunt set to true but config has no treasure_hunt session."]
+    for key in ["claim_button", "final_click"]:
+        if key not in th or not (isinstance(th[key], list) and len(th[key]) == 2):
+            errors.append(f"treasure_hunt.{key}, must be a list")
+    if not isinstance(th["advanced_clicks"], list) or not th["advanced_list"]:
+        errors.append("treasure_hunt.advanced_clicks must be a list of [x, y]")
+    else: 
+        for i, pos in enumerate(th["advance_clicks"]):
+            if not (isinstance(pos, list) and len(pos) == 2):
+                errors.append(f"treasure_hunt.advance_clicks[{i}] must be [x, y]")
+    d = th.get("final_click_delay")
+    if not isinstance(d, (int, float)) or d < 0:
+        errors.append("treasure_hunt.final_click_delay must be a positive number")
+    return errors
