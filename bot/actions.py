@@ -71,7 +71,7 @@ def wait_for_match(seconds=8):
     wait(seconds)
 
 
-def click_next(x=1350, y=880):
+def click_next(x=1400, y=777):
     """Skip the current base during scouting."""
     click(x, y)
 
