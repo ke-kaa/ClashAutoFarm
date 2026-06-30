@@ -24,16 +24,24 @@ def find(screen, template, threshold=0.3):
     return max_val >= threshold
 
 
-def is_disconnected(screen, templates):
+def is_disconnected(screen, templates, threshold=0.):
     """Check if the wifi disconnected icon is visible."""
-    return find(screen, template=templates["wifi_disconnected"])
+    return find(screen, template=templates["wifi_disconnected"], threshold=threshold)
 
 
-def is_reconnect_popup(screen, templates):
+def is_reconnect_popup(screen, templates, threshold=0.3):
     """Check if the reconnect popup is visible."""
-    return find(screen, template=templates["reconnect_popup"])
+    return find(screen, template=templates["reconnect_popup"], threshold=threshold)
 
 
-def is_onscout_screen(screen, templates):
+def is_onscout_screen(screen, templates, threshold=0.3):
     """Check if the scout screen is visible."""
-    return find(screen, templates["scout_screen"])
+    return find(screen, templates["scout_screen"], threshold=threshold)
+
+def is_home_screen(screen, templates, threshold=0.3):
+    """Check if the home screen is visible."""
+    return find(screen, templates["home_screen"], threshold=threshold)
+
+def is_battle_over(screen, templates, threshold=0.3):
+    """Check if the battle over screen is visible."""
+    return find(screen, templates["battle_over"], threshold=threshold)

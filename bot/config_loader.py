@@ -15,7 +15,7 @@ REQUIRED_TIMINGS = [
     "troop_engage_wait", "hero_ability_activate_after_deployment", "result_screen_wait",
 ]
 
-REQUIRED_SECTIONS = ["timings", "deploy", "camera", "thresholds"]
+REQUIRED_SECTIONS = ["timings", "deploy", "camera", "thresholds", "detection"]
 
 
 def load_config(path=None):
@@ -81,6 +81,12 @@ def validate_config(config):
                     errors.append(f"thresholds.{level} missing '{key}'")
                 elif not isinstance(th[key], (int, float)) or th[key] < 0:
                     errors.append(f"thresholds.{level}.{key} must be a positive number")
+    
+    if "detection" in config:
+        detection = config["detection"].items()
+        for key in detection:
+            if not isinstance(detection[key], (int, float)) or detection[key] < 0:
+                errors.append(f"detection.{key} must be a positive number")
 
     return errors
 

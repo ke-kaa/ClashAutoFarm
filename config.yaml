@@ -103,3 +103,9 @@ thresholds:
   18:
     gold_elixir_total: 240000
     dark_elixir: 10000
+
+detection:
+  scout_screen_timeout: 12
+  battle_end_timeout: 60
+  scout_screen_timeout: 20
+  poll_interval: 0.5

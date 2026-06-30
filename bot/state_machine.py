@@ -57,7 +57,9 @@ class StateMachine:
         elapsed = time.time() - self._state_entered_at
 
         if elapsed > timeout:
-            logger.warning("Stuck in {} for {:.0f}s (limit {}s)", self.state.name, elapsed, timeout)
+            logger.warning(
+                "Stuck in {} for {:.0f}s (limit {}s)", self.state.name, elapsed, timeout
+            )
             self._dump_failure_screenshot(screen, reason="timeout")
             self.transition(State.IDLE)
             return True
@@ -109,14 +111,24 @@ class StateMachine:
 
     def _handle_finding_match(self):
         """FINDING_MATCH → wait for match → SCOUTING."""
-        actions.wait_for_match(seconds=self.config["timings"]["match_wait"])
-        self.transition(State.SCOUTING)
+        det = self.config.get("detection", {})
+        ok, _ = self._wait_for(lambda s: tmpl.is_onscout_screen(s, self.templates), timeout=det["scout_screen_timeout"], poll=det["poll_interval"])
+        if ok:
+            self.transition(State.SCOUTING)
+        else: 
+            logger.warning("Scout screen never appeare; bailing to IDLE")
+            self.transition(State.IDLE)
 
     def _handle_scouting(self, screen):
         """SCOUTING → read loot → attack or skip."""
         regions = self.config.get("regions", {})
         loot = read_loot(screen, regions)
-        logger.info("Loot: gold={}  elixir={}  dark={}", loot["gold"], loot["elixir"], loot["dark_elixir"])
+        logger.info(
+            "Loot: gold={}  elixir={}  dark={}",
+            loot["gold"],
+            loot["elixir"],
+            loot["dark_elixir"],
+        )
 
         any_failed = -1 in loot.values()
         if any_failed:
@@ -175,12 +187,20 @@ class StateMachine:
                 count=spell.get("count", 1),
             )
 
-        actions.wait(timings["hero_ability_activate_after_deployment"])
+        actions.wait(timings["hero_ability_a          sdfactivate_after_deployment"])
 
         for ability_slot in deploy["hero_abilities"]:
             actions.activate_hero_ability(tuple(ability_slot))
-
-        actions.wait(timings["attack_duration"])
+        
+        det = self.config.get("detection", {})
+        ok, screen = self._wait_for(
+                lambda s: tmpl.is_battle_over(s, self.templates),
+                timeout=det["battle_over_timeout"],
+                poll=det["poll_interval"],
+        )
+        if not ok: 
+            logger.warning("Battle over screen not detected within {}s", det["battle_over_timeout"])
+            self._dump_failure_screenshot(screen, reason="no_battle_end")
         self.transition(State.BATTLE_END)
 
     def _handle_attacking(self):
@@ -191,7 +211,16 @@ class StateMachine:
         """BATTLE_END → end battle → return home → IDLE."""
         actions.end_battle()
         actions.return_home()
-        actions.wait_for_result_screen(seconds=self.config["timings"]["result_screen_wait"])
+        det = self.config.get("detection", {})
+        ok, screen = self._wait_for(
+            lambda s: tmpl.is_home_screen(s, self.templates),
+            timeout=det["home_screen_timeout"],
+            poll=det["poll_interval"],
+        )
+
+        if not ok: 
+            logger.warning("Home screen not confirmed after battle")
+            self._dump_failure_screenshot(screen, reason="home_time_out")
         self.transition(State.IDLE)
 
     def _handle_disconnected(self):
@@ -203,3 +232,14 @@ class StateMachine:
         actions.click_reconnect()
         actions.wait(self.config["timings"]["reconnect_wait"])
         self.transition(State.IDLE)
+
+    def _wait_for(self, predicate, timeout, poll=0.5):
+        """Poll grab()+predicate until True or timeout. Returns (ok: bool, last_screen)."""
+        deadline = time.time() + timeout
+        screen = grab()
+        while time.time() < deadline:
+            screen = grab()
+            if predicate(screen):
+                return True, screen
+            actions.wait(poll)
+        return False, screen
