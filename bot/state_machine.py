@@ -113,7 +113,7 @@ class StateMachine:
     def _handle_finding_match(self):
         """FINDING_MATCH → wait for match → SCOUTING."""
         det = self.config.get("detection", {})
-        ok, _ = self._wait_for(lambda s: tmpl.is_onscout_screen(s, self.templates), timeout=det["scout_screen_timeout"], poll=det["poll_interval"])
+        ok, _ = self._wait_for(lambda s: not tmpl.is_onscout_screen(s, self.templates), timeout=det["scout_screen_timeout"], poll=det["poll_interval"])
         if ok:
             self.transition(State.SCOUTING)
         else: 
