@@ -188,7 +188,7 @@ class StateMachine:
                 count=spell.get("count", 1),
             )
 
-        actions.wait(timings["hero_ability_a          sdfactivate_after_deployment"])
+        actions.wait(timings["hero_ability_activate_after_deployment"])
 
         for ability_slot in deploy["hero_abilities"]:
             actions.activate_hero_ability(tuple(ability_slot))

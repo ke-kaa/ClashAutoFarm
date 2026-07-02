@@ -24,7 +24,7 @@ def find(screen, template, threshold=0.3):
     return max_val >= threshold
 
 
-def is_disconnected(screen, templates, threshold=0.):
+def is_disconnected(screen, templates, threshold=0.3):
     """Check if the wifi disconnected icon is visible."""
     return find(screen, template=templates["wifi_disconnected"], threshold=threshold)
 

@@ -84,8 +84,8 @@ def validate_config(config):
     
     if "detection" in config:
         detection = config["detection"].items()
-        for key in detection:
-            if not isinstance(detection[key], (int, float)) or detection[key] < 0:
+        for key, item in detection:
+            if not isinstance(item, (int, float)) or item < 0:
                 errors.append(f"detection.{key} must be a positive number")
 
     return errors

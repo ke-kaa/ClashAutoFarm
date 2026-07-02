@@ -110,11 +110,11 @@ detection:
   poll_interval: 0.5
 
 treasure_hunt:
-  claim_button: []
+  claim_button: [765, 865]
   advanced_clicks: 
-    - []
-    - []
-    - []
-    - []
-  final_click_delay: 3.5
-  final_click: []
+    - [770, 906]
+    - [1004, 1022]
+    - [800, 800]
+    - [400, 400]
+  final_click_delay: 4
+  final_click: [761, 846]
