@@ -45,6 +45,8 @@ class StateMachine:
         self.config = load_config()
         self._state_entered_at = time.time()
         self.treasure_hunt = treasure_hunt
+        self._attack_phase = None
+        self._phase_deadline = 0
 
     def transition(self, new_state):
         """Transition to a new state."""
@@ -99,7 +101,7 @@ class StateMachine:
         elif self.state == State.SCOUTING:
             self._handle_scouting(screen)
         elif self.state == State.ATTACKING:
-            self._handle_attacking()
+            self._handle_attacking(screen)
         elif self.state == State.BATTLE_END:
             self._handle_battle_end()
 
@@ -146,10 +148,8 @@ class StateMachine:
             actions.wait(self.config["timings"]["scout_wait"])
 
     def _start_attack(self):
-        """Deploy troops and transition to ATTACKING."""
+        """Deploy troops and hand off to ATTACKING for tick-driven progression."""
         self.transition(State.ATTACKING)
-        deploy = self.config["deploy"]
-        timings = self.config["timings"]
         camera = self.config["camera"]
 
         actions.zoom_in()
@@ -157,7 +157,14 @@ class StateMachine:
             start=tuple(camera["start"]),
             end=tuple(camera["end"]),
         )
+        self._deploy_troops()
 
+        self._attack_phase = "engage_wait"
+        self._phase_deadline = time.time() + self.config["timings"]["troop_engage_wait"]
+
+    def _deploy_troops(self):
+        """Fire the troop and hero deploy burst."""
+        deploy = self.config["deploy"]
         for troop in deploy["troops"]:
             slot = tuple(troop["slot"])
             if troop["type"] == "drag":
@@ -179,34 +186,40 @@ class StateMachine:
                 target=tuple(hero["target"]),
             )
 
-        actions.wait(timings["troop_engage_wait"])
-
-        for spell in deploy["spells"]:
+    def _deploy_spells(self):
+        """Fire the spell deploy burst."""
+        for spell in self.config["deploy"]["spells"]:
             actions.deploy_spell(
                 spell_slot=tuple(spell["slot"]),
                 target=tuple(spell["target"]),
                 count=spell.get("count", 1),
             )
 
-        actions.wait(timings["hero_ability_activate_after_deployment"])
-
-        for ability_slot in deploy["hero_abilities"]:
+    def _activate_abilities(self):
+        """Activate all hero abilities."""
+        for ability_slot in self.config["deploy"]["hero_abilities"]:
             actions.activate_hero_ability(tuple(ability_slot))
-        
-        det = self.config.get("detection", {})
-        ok, screen = self._wait_for(
-                lambda s: tmpl.is_battle_over(s, self.templates),
-                timeout=det["battle_end_timeout"],
-                poll=det["poll_interval"],
-        )
-        if not ok: 
-            logger.warning("Battle over screen not detected within {}s", det["battle_end_timeout"])
-            self._dump_failure_screenshot(screen, reason="no_battle_end")
-        self.transition(State.BATTLE_END)
 
-    def _handle_attacking(self):
-        """ATTACKING — battle in progress, wait for it to end."""
-        pass
+    def _handle_attacking(self, screen):
+        """ATTACKING — advance the deploy timeline, then poll for battle end."""
+        timings = self.config["timings"]
+
+        if self._attack_phase == "engage_wait":
+            if time.time() < self._phase_deadline:
+                return
+            self._deploy_spells()
+            self._attack_phase = "ability_wait"
+            self._phase_deadline = time.time() + timings["hero_ability_activate_after_deployment"]
+
+        elif self._attack_phase == "ability_wait":
+            if time.time() < self._phase_deadline:
+                return
+            self._activate_abilities()
+            self._attack_phase = "await_end"
+
+        elif self._attack_phase == "await_end":
+            if tmpl.is_battle_over(screen, self.templates):
+                self.transition(State.BATTLE_END)
 
     def _handle_battle_end(self):
         """BATTLE_END → end battle → (claim reward | return home) → IDLE."""
