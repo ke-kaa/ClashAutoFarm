@@ -15,6 +15,8 @@ REQUIRED_TIMINGS = [
     "troop_engage_wait", "hero_ability_activate_after_deployment", "result_screen_wait",
 ]
 
+REQUIRED_DETECTION = ["scout_screen_timeout", "battle_end_timeout", "home_screen_timeout", "poll_interval"]
+
 REQUIRED_SECTIONS = ["timings", "deploy", "camera", "thresholds", "detection"]
 
 
@@ -83,6 +85,9 @@ def validate_config(config):
                     errors.append(f"thresholds.{level}.{key} must be a positive number")
     
     if "detection" in config:
+        for key in REQUIRED_DETECTION:
+            if key not in config["detection"].keys():
+                errors.append(f"Missing detection: '{key}'")
         detection = config["detection"].items()
         for key, item in detection:
             if not isinstance(item, (int, float)) or item < 0:
