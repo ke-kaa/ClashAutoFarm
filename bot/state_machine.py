@@ -196,11 +196,11 @@ class StateMachine:
         det = self.config.get("detection", {})
         ok, screen = self._wait_for(
                 lambda s: tmpl.is_battle_over(s, self.templates),
-                timeout=det["battle_over_timeout"],
+                timeout=det["battle_end_timeout"],
                 poll=det["poll_interval"],
         )
         if not ok: 
-            logger.warning("Battle over screen not detected within {}s", det["battle_over_timeout"])
+            logger.warning("Battle over screen not detected within {}s", det["battle_end_timeout"])
             self._dump_failure_screenshot(screen, reason="no_battle_end")
         self.transition(State.BATTLE_END)
 
