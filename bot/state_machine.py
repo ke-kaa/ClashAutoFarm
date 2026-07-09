@@ -137,7 +137,7 @@ class StateMachine:
             self._start_attack()
             return
 
-        if meets_loot_threshold(self.townhall_level, loot):
+        if meets_loot_threshold(self.townhall_level, loot, self.config):
             logger.info("Meets threshold — attacking")
             self._start_attack()
         else:

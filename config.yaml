@@ -100,7 +100,7 @@ thresholds:
     dark_elixir: 10000
 
   18:
-    gold_elixir_total: 240000
+    gold_elixir_total: 2400000
     dark_elixir: 10000
 
 detection:

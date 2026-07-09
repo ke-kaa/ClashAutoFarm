@@ -106,9 +106,8 @@ def load_and_validate(path=None):
     return config
 
 
-def meets_loot_threshold(townhall_level, loot):
+def meets_loot_threshold(townhall_level, loot, config):
     """Check if loot meets the minimum threshold for a given townhall level."""
-    config = load_config()
     th = config["thresholds"].get(townhall_level)
     if not th:
         return False
@@ -127,10 +126,10 @@ def validate_treasure_hunt(config):
     for key in ["claim_button", "final_click"]:
         if key not in th or not (isinstance(th[key], list) and len(th[key]) == 2):
             errors.append(f"treasure_hunt.{key}, must be a list")
-    if not isinstance(th["advanced_clicks"], list) or not th["advanced_list"]:
+    if not isinstance(th["advanced_clicks"], list) or not th["advanced_clicks"]:
         errors.append("treasure_hunt.advanced_clicks must be a list of [x, y]")
     else: 
-        for i, pos in enumerate(th["advance_clicks"]):
+        for i, pos in enumerate(th["advanced_clicks"]):
             if not (isinstance(pos, list) and len(pos) == 2):
                 errors.append(f"treasure_hunt.advance_clicks[{i}] must be [x, y]")
     d = th.get("final_click_delay")

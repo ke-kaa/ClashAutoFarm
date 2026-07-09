@@ -160,10 +160,10 @@ def claim_treasure_reward(cfg):
     """
     click(*cfg["claim_button"])
     _random_delay()
-    for pos in cfg["advanced_tap"]:
+    for pos in cfg["advanced_clicks"]:
         click(*pos)
         _random_delay()
-    wait(*cfg["final_click_delay"])
+    wait(cfg["final_click_delay"])
     click(*cfg["final_click"])
 
     
