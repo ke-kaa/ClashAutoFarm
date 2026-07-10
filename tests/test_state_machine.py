@@ -195,6 +195,20 @@ def test_battle_end_claims_reward_when_chest_present(machine, monkeypatch):
     assert machine.state == State.IDLE
 
 
+def test_reconnected_home_confirmed_goes_idle(machine):
+    machine.state = State.DISCONNECTED
+    state_machine.tmpl.is_home_screen.return_value = True
+    machine._handle_reconnected(SCREEN)
+    assert machine.state == State.IDLE
+
+
+def test_reconnected_not_home_stays(machine):
+    machine.state = State.DISCONNECTED
+    state_machine.tmpl.is_home_screen.return_value = False
+    machine._handle_reconnected(SCREEN)
+    assert machine.state == State.DISCONNECTED
+
+
 def test_battle_end_returns_home_when_no_chest(machine, monkeypatch):
     machine.treasure_hunt = True
     monkeypatch.setattr(machine, "_wait_for", lambda *a, **k: (True, SCREEN))

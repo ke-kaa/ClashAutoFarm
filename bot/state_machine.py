@@ -85,13 +85,21 @@ class StateMachine:
             return
 
         if tmpl.is_disconnected(screen, self.templates):
-            self.transition(State.DISCONNECTED)
+            if self.state != State.DISCONNECTED:
+                self.transition(State.DISCONNECTED)
             self._handle_disconnected()
             return
 
         if tmpl.is_reconnect_popup(screen, self.templates):
-            self.transition(State.RECONNECT_POPUP)
+            if self.state != State.RECONNECT_POPUP:
+                self.transition(State.RECONNECT_POPUP)
             self._handle_reconnect()
+            return
+
+        # Network indicators cleared. If we were in a network state (with or without a
+        # reconnect popup), confirm we're back at the home village before resuming.
+        if self.state in (State.DISCONNECTED, State.RECONNECT_POPUP):
+            self._handle_reconnected(screen)
             return
 
         if self.state == State.IDLE:
@@ -251,14 +259,22 @@ class StateMachine:
         self.transition(State.IDLE)
 
     def _handle_disconnected(self):
-        """DISCONNECTED → wait and check again."""
+        """DISCONNECTED — network down, nothing to click. Wait and re-check next tick."""
         actions.wait(self.config["timings"]["reconnect_wait"])
 
     def _handle_reconnect(self):
-        """RECONNECT_POPUP → click reconnect → wait → IDLE."""
+        """RECONNECT_POPUP — dismiss the popup. Home is verified once indicators clear."""
         actions.click_reconnect()
         actions.wait(self.config["timings"]["reconnect_wait"])
-        self.transition(State.IDLE)
+
+    def _handle_reconnected(self, screen):
+        """Network cleared — confirm the home village before resuming, else keep waiting."""
+        if tmpl.is_home_screen(screen, self.templates):
+            logger.info("Network recovered — home village confirmed")
+            self.transition(State.IDLE)
+        else:
+            logger.warning("Network cleared but home village not confirmed — waiting")
+            actions.wait(self.config["timings"]["reconnect_wait"])
 
     def _wait_for(self, predicate, timeout, poll=0.5):
         """Poll grab()+predicate until True or timeout. Returns (ok: bool, last_screen)."""
