@@ -13,7 +13,7 @@ from vision import templates
 from bot.config_loader import load_and_validate, validate_treasure_hunt
 from bot.state_machine import StateMachine
 
-TEMPLATES_DIR = "/home/kaku/Documents/PersonalProjects/ClashAutoFarm/assets/templates/"
+TEMPLATES_DIR = Path(__file__).resolve().parent / "assets" / "templates"
 LOOP_TICK = 0.5
 LOG_DIR = Path(__file__).resolve().parent / "logs"
 
