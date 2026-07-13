@@ -34,7 +34,7 @@ def read_number(img):
     return _parse_number(text)
 
 
-def read_loot(screen, regions):
+def read_loot(screen, regions, battle_end=False):
     """
     Read gold, elixir, and dark elixir from a single loot region.
 
@@ -50,7 +50,7 @@ def read_loot(screen, regions):
     -------
     dict with keys 'gold', 'elixir', 'dark_elixir', values are ints (-1 on failure)
     """
-    loot_region = regions.get("loot_region")
+    loot_region = regions.get("loot_region") if not battle_end else regions.get("loot_region_battle_end")
     if not loot_region:
         return {"gold": -1, "elixir": -1, "dark_elixir": -1}
 

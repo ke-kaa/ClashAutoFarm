@@ -1,6 +1,6 @@
 """
-python calibration/grab.py scrout_screen match (for a matching screen)
-python calibration/grab.py scrout_screen mismatch (for a non-matching screen)
+python calibration/grab.py scout_screen match (for a matching screen)
+python calibration/grab.py scout_screen mismatch (for a non-matching screen)
 """
 
 import sys, time

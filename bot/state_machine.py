@@ -5,6 +5,7 @@ bot/state_machine.py — Game state detection and transitions.
 import time
 from enum import Enum, auto
 from pathlib import Path
+
 from loguru import logger
 
 from bot import actions
@@ -12,7 +13,6 @@ from bot.config_loader import load_config, meets_loot_threshold
 from vision.capture import grab, save_screenshot
 from vision import templates as tmpl
 from vision.ocr import read_loot
-
 
 FAILURES_DIR = Path(__file__).resolve().parent.parent / "logs" / "failures"
 
@@ -38,15 +38,30 @@ class State(Enum):
 
 
 class StateMachine:
-    def __init__(self, templates_dict, townhall_level=10, treasure_hunt=False):
+    def __init__(
+        self,
+        templates_dict,
+        townhall_level=10,
+        treasure_hunt=False,
+        csv_writer=None,
+        args=None,
+    ):
         self.state = State.IDLE
         self.templates = templates_dict
         self.townhall_level = townhall_level
+        self.csv_writer = csv_writer
+        self.args = args
         self.config = load_config()
         self._state_entered_at = time.time()
         self.treasure_hunt = treasure_hunt
         self._attack_phase = None
         self._phase_deadline = 0
+        self.total_attacked = 0
+        self.total_skipped = 0
+        self.current_raid_loot = {"gold": 0, "elixir": 0, "dark_elixir": 0}
+        self.total_loot = {"gold": 0, "elixir": 0, "dark_elixir": 0}
+        self.attack_start_time = None
+        self.battle_duration = None
 
     def transition(self, new_state):
         """Transition to a new state."""
@@ -123,10 +138,14 @@ class StateMachine:
     def _handle_finding_match(self):
         """FINDING_MATCH → wait for match → SCOUTING."""
         det = self.config.get("detection", {})
-        ok, _ = self._wait_for(lambda s: not tmpl.is_onscout_screen(s, self.templates), timeout=det["scout_screen_timeout"], poll=det["poll_interval"])
+        ok, _ = self._wait_for(
+            lambda s: not tmpl.is_onscout_screen(s, self.templates),
+            timeout=det["scout_screen_timeout"],
+            poll=det["poll_interval"],
+        )
         if ok:
             self.transition(State.SCOUTING)
-        else: 
+        else:
             logger.warning("Scout screen never appeare; bailing to IDLE")
             self.transition(State.IDLE)
 
@@ -140,6 +159,7 @@ class StateMachine:
             loot["elixir"],
             loot["dark_elixir"],
         )
+        self.current_raid_loot = loot
 
         any_failed = -1 in loot.values()
         if any_failed:
@@ -152,6 +172,23 @@ class StateMachine:
             self._start_attack()
         else:
             logger.info("Below threshold — skipping")
+            self.total_skipped += 1
+            self.csv_writer.write(
+                "raid_summary",
+                {
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "account_name": self.args.account_name if self.args else "unknown",
+                    "attacked": False,
+                    "townhall_level": self.townhall_level,
+                    "attack_duration_ms": 0,
+                    "gold_available": loot.get("gold", -1),
+                    "elixir_available": loot.get("elixir", -1),
+                    "dark_elixir_available": loot.get("dark_elixir", -1),
+                    "gold_looted": 0,
+                    "elixir_looted": 0,
+                    "dark_elixir_looted": 0,
+                },
+            )
             actions.click_next()
             actions.wait(self.config["timings"]["scout_wait"])
 
@@ -165,6 +202,7 @@ class StateMachine:
             start=tuple(camera["start"]),
             end=tuple(camera["end"]),
         )
+        self.attack_start_time = time.time()
         self._deploy_troops()
 
         self._attack_phase = "engage_wait"
@@ -217,7 +255,9 @@ class StateMachine:
                 return
             self._deploy_spells()
             self._attack_phase = "ability_wait"
-            self._phase_deadline = time.time() + timings["hero_ability_activate_after_deployment"]
+            self._phase_deadline = (
+                time.time() + timings["hero_ability_activate_after_deployment"]
+            )
 
         elif self._attack_phase == "ability_wait":
             if time.time() < self._phase_deadline:
@@ -226,17 +266,51 @@ class StateMachine:
             self._attack_phase = "await_end"
 
         elif self._attack_phase == "await_end":
-            if tmpl.is_battle_over(screen, self.templates):
+            if tmpl.is_battle_over(screen, self.templates) or tmpl.is_claim_reward(
+                screen, self.templates
+            ):
+                self.total_attacked += 1
+                self.battle_duration = time.time() - self.attack_start_time
                 self.transition(State.BATTLE_END)
 
     def _handle_battle_end(self):
         """BATTLE_END → end battle → (claim reward | return home) → IDLE."""
         det = self.config.get("detection", {})
-        if self.treasure_hunt:
-            ok, screen = self._wait_for(
-            lambda s: tmpl.is_claim_reward(s, self.templates) or tmpl.is_home_screen(s, self.templates),
-            timeout=det["home_screen_timeout"], poll=det["poll_interval"],
+
+        ok, screen = self._wait_for(
+            lambda s: tmpl.is_battle_over(s, self.templates)
+            or tmpl.is_claim_reward(s, self.templates),
+            timeout=det["home_screen_timeout"],
+            poll=det["poll_interval"],
+        )
+        if ok:
+            regions = self.config.get("regions", {})
+            loot = read_loot(screen, regions, battle_end=True)
+
+            for resource in ("gold", "elixir", "dark_elixir"):
+                self.total_loot[resource] += max(loot.get(resource, 0), 0)
+
+            self.csv_writer.write(
+                "raid_summary",
+                {
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "account_name": self.args.account_name if self.args else "unknown",
+                    "attacked": True,
+                    "townhall_level": self.townhall_level,
+                    "attack_duration_ms": (
+                        int(self.battle_duration * 1000) if self.battle_duration else -1
+                    ),
+                    "gold_available": self.current_raid_loot.get("gold", -1),
+                    "elixir_available": self.current_raid_loot.get("elixir", -1),
+                    "dark_elixir_available": self.current_raid_loot.get(
+                        "dark_elixir", -1
+                    ),
+                    "gold_looted": loot.get("gold", -1),
+                    "elixir_looted": loot.get("elixir", -1),
+                    "dark_elixir_looted": loot.get("dark_elixir", -1),
+                },
             )
+        if self.treasure_hunt:
             if ok and tmpl.is_claim_reward(screen, self.templates):
                 logger.info("Treasure Hunt chest earned — claiming reward")
                 actions.claim_treasure_reward(self.config["treasure_hunt"])
@@ -253,7 +327,7 @@ class StateMachine:
             poll=det["poll_interval"],
         )
 
-        if not ok: 
+        if not ok:
             logger.warning("Home screen not confirmed after battle")
             self._dump_failure_screenshot(screen, reason="home_time_out")
         self.transition(State.IDLE)

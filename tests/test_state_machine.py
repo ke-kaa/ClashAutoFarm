@@ -43,7 +43,7 @@ def machine(monkeypatch):
     monkeypatch.setattr(state_machine, "actions", MagicMock())
     monkeypatch.setattr(state_machine, "tmpl", MagicMock())
     monkeypatch.setattr(state_machine, "grab", lambda: "SCREEN")
-    m = StateMachine(templates_dict={}, townhall_level=10)
+    m = StateMachine(templates_dict={}, townhall_level=10, csv_writer=MagicMock())
     return m
 
 
@@ -160,7 +160,20 @@ def test_attacking_ability_advances_to_await_end(machine, monkeypatch):
 def test_attacking_await_end_transitions_when_battle_over(machine):
     machine.state = State.ATTACKING
     machine._attack_phase = "await_end"
+    machine.attack_start_time = time.time()
     state_machine.tmpl.is_battle_over.return_value = True
+    state_machine.tmpl.is_claim_reward.return_value = False
+    machine._handle_attacking(SCREEN)
+    assert machine.state == State.BATTLE_END
+    assert machine.total_attacked == 1
+
+
+def test_attacking_await_end_transitions_on_claim_reward(machine):
+    machine.state = State.ATTACKING
+    machine._attack_phase = "await_end"
+    machine.attack_start_time = time.time()
+    state_machine.tmpl.is_battle_over.return_value = False
+    state_machine.tmpl.is_claim_reward.return_value = True
     machine._handle_attacking(SCREEN)
     assert machine.state == State.BATTLE_END
 
@@ -168,7 +181,9 @@ def test_attacking_await_end_transitions_when_battle_over(machine):
 def test_attacking_await_end_stays_when_not_over(machine):
     machine.state = State.ATTACKING
     machine._attack_phase = "await_end"
+    machine.attack_start_time = time.time()
     state_machine.tmpl.is_battle_over.return_value = False
+    state_machine.tmpl.is_claim_reward.return_value = False
     machine._handle_attacking(SCREEN)
     assert machine.state == State.ATTACKING
 

@@ -10,7 +10,7 @@ timings:
 regions:
   loot_region: [60, 230, 160, 160]
   wifi_icon: [700, 470, 200, 130]
-
+  loot_region_battle_end: [0, 0, 0, 0]
 camera:
   start: [682, 483]
   end: [1097, 756]
