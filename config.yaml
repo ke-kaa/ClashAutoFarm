@@ -11,6 +11,8 @@ regions:
   loot_region: [60, 230, 160, 160]
   wifi_icon: [700, 470, 200, 130]
   loot_region_battle_end: [0, 0, 0, 0]
+  loot_region_home_village: [0, 0, 0, 0]
+
 camera:
   start: [682, 483]
   end: [1097, 756]
@@ -118,3 +120,59 @@ treasure_hunt:
     - [400, 400]
   final_click_delay: 4
   final_click: [761, 846]
+
+storage_capacities:
+  8:
+    gold: 5250000
+    elixir: 5250000
+    dark_elixir: 75000
+
+  9:
+    gold: 7000000
+    elixir: 7000000
+    dark_elixir: 180000
+
+  10:
+    gold: 7000000
+    elixir: 7000000
+    dark_elixir: 180000
+
+  11:
+    gold: 8000000
+    elixir: 8000000
+    dark_elixir: 180000
+
+  12:
+    gold: 12000000
+    elixir: 12000000
+    dark_elixir: 220000
+
+  13:
+    gold: 16000000
+    elixir: 16000000
+    dark_elixir: 280000
+
+  14:
+    gold: 18000000
+    elixir: 18000000
+    dark_elixir: 330000
+
+  15:
+    gold: 20000000
+    elixir: 20000000
+    dark_elixir: 360000
+
+  16:
+    gold: 22000000
+    elixir: 22000000
+    dark_elixir: 390000
+
+  17:
+    gold: 24000000
+    elixir: 24000000
+    dark_elixir: 420000
+
+  18:
+    gold: 26000000
+    elixir: 26000000
+    dark_elixir: 450000

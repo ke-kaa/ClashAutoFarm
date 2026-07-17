@@ -5,11 +5,12 @@ bot/state_machine.py — Game state detection and transitions.
 import time
 from enum import Enum, auto
 from pathlib import Path
+from datetime import datetime
 
 from loguru import logger
 
 from bot import actions
-from bot.config_loader import load_config, meets_loot_threshold
+from bot.config_loader import load_config, meets_loot_threshold, check_storage_full
 from vision.capture import grab, save_screenshot
 from vision import templates as tmpl
 from vision.ocr import read_loot
@@ -44,13 +45,17 @@ class StateMachine:
         townhall_level=10,
         treasure_hunt=False,
         csv_writer=None,
+        stop_event=None,
         args=None,
+        start_time=None,
     ):
         self.state = State.IDLE
         self.templates = templates_dict
         self.townhall_level = townhall_level
         self.csv_writer = csv_writer
+        self.stop_event = stop_event
         self.args = args
+        self.start_time = start_time
         self.config = load_config()
         self._state_entered_at = time.time()
         self.treasure_hunt = treasure_hunt
@@ -152,7 +157,7 @@ class StateMachine:
     def _handle_scouting(self, screen):
         """SCOUTING → read loot → attack or skip."""
         regions = self.config.get("regions", {})
-        loot = read_loot(screen, regions)
+        loot = read_loot(screen, regions.get("loot_region"))
         logger.info(
             "Loot: gold={}  elixir={}  dark={}",
             loot["gold"],
@@ -285,7 +290,8 @@ class StateMachine:
         )
         if ok:
             regions = self.config.get("regions", {})
-            loot = read_loot(screen, regions, battle_end=True)
+            loot_region_battle_end = regions.get("loot_region_battle_end", {})
+            loot = read_loot(screen, loot_region_battle_end)
 
             for resource in ("gold", "elixir", "dark_elixir"):
                 self.total_loot[resource] += max(loot.get(resource, 0), 0)
@@ -326,6 +332,26 @@ class StateMachine:
             timeout=det["home_screen_timeout"],
             poll=det["poll_interval"],
         )
+        if ok and self.args and self.stop_event:
+            if self.args.max_loot:
+                regions = self.config.get("regions", {})
+                loot_region_home_village = regions.get("loot_region_home_village", {})
+                loot = read_loot(screen, loot_region_home_village)
+                storage_full = check_storage_full(self.townhall_level, loot, self.config)
+                if storage_full:
+                    self.stop_event.set()
+
+            if self.args.max_attacks and self.total_attacked >= self.args.max_attacks:
+                logger.info("Max attacks reached ({}), stopping", self.args.max_attacks)
+                self.stop_event.set()
+
+            if self.args.max_runtime:
+                elapsed_time = datetime.now() - self.start_time
+                if elapsed_time >= self.args.max_runtime:
+                    logger.info(
+                        "Max runtime reached ({}s), stopping", self.args.max_runtime
+                    )
+                    self.stop_event.set()
 
         if not ok:
             logger.warning("Home screen not confirmed after battle")

@@ -7,15 +7,24 @@ import yaml
 from pathlib import Path
 from loguru import logger
 
-
 _CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.yaml"
 
 REQUIRED_TIMINGS = [
-    "scout_wait", "attack_duration", "reconnect_wait", "match_wait",
-    "troop_engage_wait", "hero_ability_activate_after_deployment", "result_screen_wait",
+    "scout_wait",
+    "attack_duration",
+    "reconnect_wait",
+    "match_wait",
+    "troop_engage_wait",
+    "hero_ability_activate_after_deployment",
+    "result_screen_wait",
 ]
 
-REQUIRED_DETECTION = ["scout_screen_timeout", "battle_end_timeout", "home_screen_timeout", "poll_interval"]
+REQUIRED_DETECTION = [
+    "scout_screen_timeout",
+    "battle_end_timeout",
+    "home_screen_timeout",
+    "poll_interval",
+]
 
 REQUIRED_SECTIONS = ["timings", "deploy", "camera", "thresholds", "detection"]
 
@@ -44,7 +53,9 @@ def validate_config(config):
             if key not in timings:
                 errors.append(f"Missing timing: '{key}'")
             elif not isinstance(timings[key], (int, float)) or timings[key] < 0:
-                errors.append(f"Timing '{key}' must be a positive number, got: {timings[key]}")
+                errors.append(
+                    f"Timing '{key}' must be a positive number, got: {timings[key]}"
+                )
 
     if "camera" in config:
         camera = config["camera"]
@@ -83,7 +94,7 @@ def validate_config(config):
                     errors.append(f"thresholds.{level} missing '{key}'")
                 elif not isinstance(th[key], (int, float)) or th[key] < 0:
                     errors.append(f"thresholds.{level}.{key} must be a positive number")
-    
+
     if "detection" in config:
         for key in REQUIRED_DETECTION:
             if key not in config["detection"].keys():
@@ -122,6 +133,20 @@ def meets_loot_threshold(townhall_level, loot, config):
 
     return (loot["gold"] + loot["elixir"]) >= th["gold_elixir_total"]
 
+
+def check_storage_full(townhall_level, loot, config):
+    """Check if loot has reached the maximum threshold for a given townhall level."""
+    th = config.get("storage_capacities", {}).get(townhall_level)
+    if not th:
+        return False
+
+    return (
+        loot["dark_elixir"] >= th["dark_elixir"]
+        and loot["gold"] >= th["gold"]
+        and loot["elixir"] >= th["elixir"]
+    )
+
+
 def validate_treasure_hunt(config):
     """Validate treasure_hunt section"""
     errors = []
@@ -133,7 +158,7 @@ def validate_treasure_hunt(config):
             errors.append(f"treasure_hunt.{key}, must be a list")
     if not isinstance(th["advanced_clicks"], list) or not th["advanced_clicks"]:
         errors.append("treasure_hunt.advanced_clicks must be a list of [x, y]")
-    else: 
+    else:
         for i, pos in enumerate(th["advanced_clicks"]):
             if not (isinstance(pos, list) and len(pos) == 2):
                 errors.append(f"treasure_hunt.advance_clicks[{i}] must be [x, y]")

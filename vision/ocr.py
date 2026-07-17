@@ -6,7 +6,6 @@ import pytesseract
 import re
 from vision.preprocess import to_grayscale, upscale, threshold, crop, invert
 
-
 TESSERACT_CONFIG_SINGLE = "--psm 7 -c tessedit_char_whitelist=0123456789"
 TESSERACT_CONFIG_BLOCK = "--psm 6 -c tessedit_char_whitelist=0123456789"
 
@@ -34,7 +33,7 @@ def read_number(img):
     return _parse_number(text)
 
 
-def read_loot(screen, regions, battle_end=False):
+def read_loot(screen, region):
     """
     Read gold, elixir, and dark elixir from a single loot region.
 
@@ -50,11 +49,9 @@ def read_loot(screen, regions, battle_end=False):
     -------
     dict with keys 'gold', 'elixir', 'dark_elixir', values are ints (-1 on failure)
     """
-    loot_region = regions.get("loot_region") if not battle_end else regions.get("loot_region_battle_end")
-    if not loot_region:
+    if not region:
         return {"gold": -1, "elixir": -1, "dark_elixir": -1}
-
-    cropped = crop(screen, loot_region)
+    cropped = crop(screen, region)
     gray = to_grayscale(cropped)
     scaled = upscale(gray, factor=3)
     binary = threshold(scaled, val=180)
@@ -71,4 +68,3 @@ def read_loot(screen, regions, battle_end=False):
             result[key] = -1
 
     return result
-

@@ -7,6 +7,9 @@ import sys
 import time
 import threading
 from pathlib import Path
+import re
+from datetime import timedelta
+from datetime import datetime
 
 from loguru import logger
 from pynput import keyboard
@@ -19,8 +22,10 @@ from utils.csv_writer import setup_csv_writer
 TEMPLATES_DIR = Path(__file__).resolve().parent / "assets" / "templates"
 LOOP_TICK = 0.5
 LOG_DIR = Path(__file__).resolve().parent / "logs"
+_DURATION_RE = re.compile(r"(\d+)(s|min|m|h|d)")
 
-_stop_event = threading.Event()
+stop_event = threading.Event()
+
 
 def _setup_logging():
     """Configure loguru: console + rotating file."""
@@ -44,8 +49,38 @@ def _on_key_press(key):
     """Stop the bot when ESC is pressed."""
     if key == keyboard.Key.esc:
         logger.warning("ESC pressed — stopping...")
-        _stop_event.set()
+        stop_event.set()
         return False
+
+
+def parse_duration(value: str) -> timedelta:
+    pos = 0
+    total = timedelta()
+
+    for match in _DURATION_RE.finditer(value.lower()):
+        if match.start() != pos:
+            raise argparse.ArgumentTypeError(
+                f"Invalid duration: {value}, Examples: 30s, 5m, 30min, 2h, 1d, 2h30min"
+            )
+
+        amount = int(match.group(1))
+        unit = match.group(2)
+
+        if unit == "d":
+            total += timedelta(days=amount)
+        elif unit == "h":
+            total += timedelta(hours=amount)
+        elif unit in ("m", "min"):
+            total += timedelta(minutes=amount)
+        elif unit == "s":
+            total += timedelta(seconds=amount)
+
+        pos = match.end()
+
+    if pos != len(value):
+        raise argparse.ArgumentTypeError(f"Invalid duration: {value}")
+
+    return total
 
 
 def main():
@@ -63,6 +98,24 @@ def main():
         help="Enable treasure hunt claim handling at the end of battle",
     )
     parser.add_argument("--account-name", help="current account's name for csv logging")
+    parser.add_argument(
+        "--max-attacks",
+        type=int,
+        default=0,
+        help="Maximum number of attacks before stopping (0 for unlimited)",
+    )
+    parser.add_argument(
+        "--max-runtime",
+        type=parse_duration,
+        default=0,
+        help="Maximum run time (e.g. 30s, 5m, 30min, 2h, 0 for unlimited)",
+    )
+    parser.add_argument(
+        "--max-loot",
+        action="store_true",
+        help="Stop when loot is maxed out",
+    )
+
     args = parser.parse_args()
 
     _setup_logging()
@@ -85,7 +138,9 @@ def main():
         townhall_level=args.townhall_level,
         treasure_hunt=args.treasure_hunt,
         csv_writer=csv_writer,
-        args=args
+        stop_event=stop_event,
+        args=args,
+        start_time=datetime.now(),
     )
 
     listener = keyboard.Listener(on_press=_on_key_press)
@@ -97,7 +152,7 @@ def main():
     start_time = time.strftime("%Y-%m-%d %H:%M:%S")
     logger.info("Starting main loop (press ESC or Ctrl+C to stop)")
     try:
-        while not _stop_event.is_set():
+        while not stop_event.is_set():
             machine.tick()
             time.sleep(LOOP_TICK)
     except KeyboardInterrupt:

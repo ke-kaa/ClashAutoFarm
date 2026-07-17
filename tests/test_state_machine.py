@@ -1,6 +1,7 @@
 """Tests for bot.state_machine — transitions and the tick-driven attack timeline."""
 
 import time
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
