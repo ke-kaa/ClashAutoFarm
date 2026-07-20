@@ -29,6 +29,7 @@ def _config():
         "deploy": {"troops": [], "heroes": [], "spells": [], "hero_abilities": []},
         "regions": {},
         "thresholds": {10: {"gold_elixir_total": 600000, "dark_elixir": 2000}},
+        "army_training": {"recipes_tab": [1, 2], "use_recipe_button": [3, 4]},
         "treasure_hunt": {
             "claim_button": [1, 2],
             "advanced_clicks": [[1, 1]],
@@ -68,6 +69,21 @@ def test_check_timeout_recovers_to_idle(machine, monkeypatch):
     assert machine._check_timeout(SCREEN) is True
     assert machine.state == State.IDLE
     machine._dump_failure_screenshot.assert_called_once()
+
+
+# --- idle / auto-train -------------------------------------------------------
+
+def test_idle_uses_army_recipe_once(machine):
+    machine._handle_idle()
+    assert machine.state == State.FINDING_MATCH
+    assert machine._army_recipe_used is True
+    state_machine.actions.use_army_recipe.assert_called_once()
+
+
+def test_idle_skips_recipe_after_first_use(machine):
+    machine._army_recipe_used = True
+    machine._handle_idle()
+    state_machine.actions.use_army_recipe.assert_not_called()
 
 
 # --- finding match -----------------------------------------------------------

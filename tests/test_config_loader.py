@@ -26,6 +26,7 @@ def _valid_config():
         },
         "thresholds": {10: {"gold_elixir_total": 600000, "dark_elixir": 2000}},
         "detection": {k: 1 for k in config_loader.REQUIRED_DETECTION},
+        "army_training": {"recipes_tab": [1, 2], "use_recipe_button": [3, 4]},
     }
 
 

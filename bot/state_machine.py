@@ -67,6 +67,7 @@ class StateMachine:
         self.total_loot = {"gold": 0, "elixir": 0, "dark_elixir": 0}
         self.attack_start_time = None
         self.battle_duration = None
+        self._army_recipe_used = False
 
     def transition(self, new_state):
         """Transition to a new state."""
@@ -137,6 +138,9 @@ class StateMachine:
         """IDLE → click attack → FINDING_MATCH."""
         actions.click_attack_button()
         actions.click_find_match()
+        if not self._army_recipe_used:
+            actions.use_army_recipe(self.config["army_training"])
+            self._army_recipe_used = True
         actions.click_confirm_attack()
         self.transition(State.FINDING_MATCH)
 

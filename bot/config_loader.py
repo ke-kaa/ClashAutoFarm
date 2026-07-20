@@ -26,7 +26,7 @@ REQUIRED_DETECTION = [
     "poll_interval",
 ]
 
-REQUIRED_SECTIONS = ["timings", "deploy", "camera", "thresholds", "detection"]
+REQUIRED_SECTIONS = ["timings", "deploy", "camera", "thresholds", "detection", "army_training"]
 
 
 def load_config(path=None):
@@ -103,6 +103,14 @@ def validate_config(config):
         for key, item in detection:
             if not isinstance(item, (int, float)) or item < 0:
                 errors.append(f"detection.{key} must be a positive number")
+
+    if "army_training" in config:
+        army_training = config["army_training"]
+        for key in ["recipes_tab", "use_recipe_button"]:
+            if key not in army_training:
+                errors.append(f"Missing army_training.{key}")
+            elif not isinstance(army_training[key], list) or len(army_training[key]) != 2:
+                errors.append(f"army_training.{key} must be a list of [x, y]")
 
     return errors
 

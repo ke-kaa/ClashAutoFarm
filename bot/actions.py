@@ -66,6 +66,13 @@ def click_confirm_attack(x=1284, y=846):
     click(x, y)
 
 
+def use_army_recipe(cfg):
+    """On the army page, open the save-recipes tab and tap the recipe's 'use' button."""
+    click(*cfg["recipes_tab"])
+    _random_delay()
+    click(*cfg["use_recipe_button"])
+
+
 def wait_for_match(seconds=8):
     """Wait for matchmaking to finish."""
     wait(seconds)
