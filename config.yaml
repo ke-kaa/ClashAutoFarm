@@ -115,6 +115,9 @@ army_training:
   recipes_tab: [0, 0]
   use_recipe_button: [0, 0]
 
+notify:
+  heartbeat_interval: 3600
+
 treasure_hunt:
   claim_button: [765, 865]
   advanced_clicks: 

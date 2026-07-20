@@ -14,6 +14,7 @@ from bot.config_loader import load_config, meets_loot_threshold, check_storage_f
 from vision.capture import grab, save_screenshot
 from vision import templates as tmpl
 from vision.ocr import read_loot
+from utils.notifier import NullNotifier
 
 FAILURES_DIR = Path(__file__).resolve().parent.parent / "logs" / "failures"
 
@@ -48,6 +49,7 @@ class StateMachine:
         stop_event=None,
         args=None,
         start_time=None,
+        notifier=None,
     ):
         self.state = State.IDLE
         self.templates = templates_dict
@@ -56,6 +58,7 @@ class StateMachine:
         self.stop_event = stop_event
         self.args = args
         self.start_time = start_time
+        self.notifier = notifier or NullNotifier()
         self.config = load_config()
         self._state_entered_at = time.time()
         self.treasure_hunt = treasure_hunt
@@ -97,6 +100,9 @@ class StateMachine:
         path = FAILURES_DIR / filename
         save_screenshot(screen, str(path))
         logger.debug("Screenshot saved to {}", path)
+        self.notifier.send(
+            f"⚠️ {reason} in {self.state.name}", image_path=str(path), key=reason
+        )
 
     def tick(self):
         """Run one cycle of the state machine."""

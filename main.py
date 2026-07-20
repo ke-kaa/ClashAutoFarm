@@ -3,6 +3,7 @@ main.py — Entry point for the Clash Auto Farm bot.
 """
 
 import argparse
+import os
 import sys
 import time
 import threading
@@ -20,6 +21,7 @@ from bot import state_machine
 from bot.state_machine import StateMachine
 from bot.dry_run import DryRunActions
 from utils.csv_writer import setup_csv_writer
+from utils.notifier import NullNotifier, TelegramNotifier
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "assets" / "templates"
 LOOP_TICK = 0.5
@@ -53,6 +55,20 @@ def _on_key_press(key):
         logger.warning("ESC pressed — stopping...")
         stop_event.set()
         return False
+
+
+def _build_notifier(enabled):
+    if not enabled:
+        return NullNotifier()
+    token = os.getenv("COC_TELEGRAM_TOKEN")
+    chat_id = os.getenv("COC_TELEGRAM_CHAT_ID")
+    if not (token and chat_id):
+        logger.warning(
+            "--notify set but COC_TELEGRAM_TOKEN/COC_TELEGRAM_CHAT_ID missing; disabled"
+        )
+        return NullNotifier()
+    logger.info("Telegram notifications: ENABLED")
+    return TelegramNotifier(token, chat_id)
 
 
 def parse_duration(value: str) -> timedelta:
@@ -122,6 +138,11 @@ def main():
         action="store_true",
         help="Run detection and decisions but perform no clicks",
     )
+    parser.add_argument(
+        "--notify",
+        action="store_true",
+        help="Send Telegram notifications (needs COC_TELEGRAM_TOKEN/CHAT_ID)",
+    )
 
     args = parser.parse_args()
 
@@ -144,6 +165,8 @@ def main():
                 logger.error(" . {}", e)
             sys.exit(1)
 
+    notifier = _build_notifier(args.notify)
+
     machine = StateMachine(
         templates_dict,
         townhall_level=args.townhall_level,
@@ -152,6 +175,7 @@ def main():
         stop_event=stop_event,
         args=args,
         start_time=datetime.now(),
+        notifier=notifier,
     )
 
     listener = keyboard.Listener(on_press=_on_key_press)
@@ -161,10 +185,18 @@ def main():
     time.sleep(5)
 
     start_time = time.strftime("%Y-%m-%d %H:%M:%S")
+    heartbeat_interval = config.get("notify", {}).get("heartbeat_interval", 0)
+    next_heartbeat = time.monotonic() + heartbeat_interval if heartbeat_interval else None
     logger.info("Starting main loop (press ESC or Ctrl+C to stop)")
     try:
         while not stop_event.is_set():
             machine.tick()
+            if next_heartbeat and time.monotonic() >= next_heartbeat:
+                notifier.send(
+                    f"alive | attacks={machine.total_attacked} "
+                    f"skips={machine.total_skipped}"
+                )
+                next_heartbeat = time.monotonic() + heartbeat_interval
             time.sleep(LOOP_TICK)
     except KeyboardInterrupt:
         logger.warning("Stopped by Ctrl+C")
@@ -182,6 +214,11 @@ def main():
         }
         csv_writer.write("account_summary", row)
         csv_writer.close()
+        notifier.send(
+            f"session ended | attacks={machine.total_attacked} "
+            f"skips={machine.total_skipped} gold={machine.total_loot.get('gold')} "
+            f"elixir={machine.total_loot.get('elixir')} dark={machine.total_loot.get('dark_elixir')}"
+        )
         listener.stop()
         logger.info("Shutdown complete")
 
