@@ -16,7 +16,9 @@ from pynput import keyboard
 
 from vision import templates
 from bot.config_loader import load_and_validate, validate_treasure_hunt
+from bot import state_machine
 from bot.state_machine import StateMachine
+from bot.dry_run import DryRunActions
 from utils.csv_writer import setup_csv_writer
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "assets" / "templates"
@@ -115,6 +117,11 @@ def main():
         action="store_true",
         help="Stop when loot is maxed out",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Run detection and decisions but perform no clicks",
+    )
 
     args = parser.parse_args()
 
@@ -122,6 +129,10 @@ def main():
     logger.info("Loading config...")
     config = load_and_validate()
     csv_writer = setup_csv_writer()
+
+    if args.dry_run:
+        logger.warning("DRY-RUN: no clicks will be performed")
+        state_machine.actions = DryRunActions()
 
     templates_dict = templates.load_template(TEMPLATES_DIR)
     logger.info("Townhall level: {}", args.townhall_level)
