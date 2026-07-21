@@ -33,10 +33,7 @@ def _config():
         "accounts": {
             "settings_button": [1, 1],
             "switch_button": [2, 2],
-            "name_region": [10, 100, 200, 40],
-            "row_height": 120,
-            "row_click_x": 50,
-            "visible_rows": 4,
+            "card_region": [10, 100, 400, 500],
             "reload_wait": 20,
             "max_scrolls": 3,
             "scroll_drag": [1, 2, 3, 4],
@@ -346,16 +343,14 @@ def test_switch_open_opens_menu(machine):
     assert machine._switch_phase == "await_card"
 
 
-def test_switch_selects_when_name_matched(machine, monkeypatch):
+def test_switch_selects_when_name_located(machine, monkeypatch):
     _switch_ready(machine)
     machine._rotation_idx = 1  # target "GuardianDeityI"
     machine._switch_phase = "select"
     machine._switch_scrolls = 0
-    # row 0 = other account, row 1 = target
-    names = ["GuardianDeity0", "GuardianDeityI", "", ""]
-    monkeypatch.setattr(state_machine, "read_text", lambda s, region: names.pop(0))
+    monkeypatch.setattr(state_machine, "locate_text", lambda s, region, target: (120, 260))
     machine._handle_switching_account(SCREEN)
-    state_machine.actions.click.assert_called_once()
+    state_machine.actions.click.assert_called_with(120, 260)
     assert machine._switch_phase == "reload"
 
 
@@ -364,7 +359,7 @@ def test_switch_scrolls_when_name_not_found(machine, monkeypatch):
     machine._rotation_idx = 1
     machine._switch_phase = "select"
     machine._switch_scrolls = 0
-    monkeypatch.setattr(state_machine, "read_text", lambda s, region: "SomeoneElse")
+    monkeypatch.setattr(state_machine, "locate_text", lambda s, region, target: None)
     machine._handle_switching_account(SCREEN)
     state_machine.actions.scroll_card.assert_called_once()
     assert machine._switch_scrolls == 1
@@ -376,7 +371,7 @@ def test_switch_stops_when_not_found_after_max_scrolls(machine, monkeypatch):
     machine._rotation_idx = 1
     machine._switch_phase = "select"
     machine._switch_scrolls = 3  # == max_scrolls
-    monkeypatch.setattr(state_machine, "read_text", lambda s, region: "SomeoneElse")
+    monkeypatch.setattr(state_machine, "locate_text", lambda s, region, target: None)
     machine._handle_switching_account(SCREEN)
     machine.stop_event.set.assert_called_once()
 

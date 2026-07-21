@@ -13,12 +13,8 @@ from bot import actions
 from bot.config_loader import load_config, meets_loot_threshold, check_storage_full
 from vision.capture import grab, save_screenshot
 from vision import templates as tmpl
-from vision.ocr import read_loot, read_text
+from vision.ocr import read_loot, locate_text
 from utils.notifier import NullNotifier
-
-
-def _normalize_name(text):
-    return "".join(text.split()).lower()
 
 FAILURES_DIR = Path(__file__).resolve().parent.parent / "logs" / "failures"
 
@@ -418,18 +414,8 @@ class StateMachine:
         self._switch_scrolls = 0
         self.transition(State.SWITCHING_ACCOUNT)
 
-    def _find_account_row(self, screen, acc, target):
-        """OCR each visible row's name; return the (x, y) click point of the match, else None."""
-        x, y0, w, h = acc["name_region"]
-        wanted = _normalize_name(target)
-        for i in range(acc["visible_rows"]):
-            region = [x, y0 + i * acc["row_height"], w, h]
-            if _normalize_name(read_text(screen, region)) == wanted:
-                return (acc["row_click_x"], y0 + i * acc["row_height"] + h // 2)
-        return None
-
     def _handle_switching_account(self, screen):
-        """Tick-driven account switch: open card → OCR-select row → reload → verify home."""
+        """Tick-driven account switch: open card → OCR-locate name → reload → verify home."""
         acc = self.config["accounts"]
         target = self._rotation[self._rotation_idx]["name"]
 
@@ -442,7 +428,7 @@ class StateMachine:
                 self._switch_phase = "select"
 
         elif self._switch_phase == "select":
-            point = self._find_account_row(screen, acc, target)
+            point = locate_text(screen, acc["card_region"], target)
             if point:
                 actions.click(*point)
                 self._switch_phase = "reload"

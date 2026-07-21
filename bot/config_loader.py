@@ -176,11 +176,11 @@ def validate_accounts(config):
         ("settings_button", 2),
         ("switch_button", 2),
         ("scroll_drag", 4),
-        ("name_region", 4),
+        ("card_region", 4),
     ]:
         if key not in acc or not (isinstance(acc[key], list) and len(acc[key]) == expected):
             errors.append(f"accounts.{key} must be a list of {expected} coordinates")
-    for key in ["row_height", "row_click_x", "visible_rows", "reload_wait", "max_scrolls"]:
+    for key in ["reload_wait", "max_scrolls"]:
         if not isinstance(acc.get(key), (int, float)) or acc.get(key, -1) < 0:
             errors.append(f"accounts.{key} must be a positive number")
     rotation = acc.get("rotation")

@@ -124,10 +124,7 @@ farming:
 accounts:
   settings_button: [1467, 789]
   switch_button: [978, 311]
-  name_region: [0, 0, 0, 0]
-  row_height: 0
-  row_click_x: 0
-  visible_rows: 4
+  card_region: [0, 0, 0, 0]
   reload_wait: 20
   max_scrolls: 5
   scroll_drag: [1271, 544, 1280, 164]
