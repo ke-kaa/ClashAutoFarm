@@ -166,10 +166,10 @@ def claim_treasure_reward(cfg):
     Tap Claim Reward -> N advanced taps through reward screen -> wait -> 1 final tap.
     """
     click(*cfg["claim_button"])
-    _random_delay()
+    _random_delay(low=2, high=3)
     for pos in cfg["advanced_clicks"]:
         click(*pos)
-        _random_delay()
+        _random_delay(low=0.5, high=1)
     wait(cfg["final_click_delay"])
     click(*cfg["final_click"])
 
