@@ -121,6 +121,20 @@ notify:
 farming:
   full_requires: [gold, elixir, dark_elixir]
 
+accounts:
+  settings_button: [0, 0]
+  switch_button: [0, 0]
+  name_region: [0, 0, 0, 0]
+  row_height: 0
+  row_click_x: 0
+  visible_rows: 4
+  reload_wait: 20
+  max_scrolls: 3
+  scroll_drag: [0, 0, 0, 0]
+  rotation:
+    - name: GuardianDeity0
+    - name: GuardianDeityI
+
 treasure_hunt:
   claim_button: [765, 865]
   advanced_clicks: 

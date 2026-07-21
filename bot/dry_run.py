@@ -11,8 +11,17 @@ from bot import actions as _real
 
 
 class DryRunActions:
+    def click(self, *a, **k):
+        logger.info("[dry-run] click {}", a)
+
     def click_attack_button(self, *a, **k):
         logger.info("[dry-run] click_attack_button")
+
+    def open_account_menu(self, *a, **k):
+        logger.info("[dry-run] open_account_menu")
+
+    def scroll_card(self, *a, **k):
+        logger.info("[dry-run] scroll_card")
 
     def click_find_match(self, *a, **k):
         logger.info("[dry-run] click_find_match")

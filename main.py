@@ -16,7 +16,12 @@ from loguru import logger
 from pynput import keyboard
 
 from vision import templates
-from bot.config_loader import load_and_validate, validate_treasure_hunt, validate_max_loot
+from bot.config_loader import (
+    load_and_validate,
+    validate_treasure_hunt,
+    validate_max_loot,
+    validate_accounts,
+)
 from bot import state_machine
 from bot.state_machine import StateMachine
 from bot.dry_run import DryRunActions
@@ -143,6 +148,11 @@ def main():
         action="store_true",
         help="Send Telegram notifications (needs COC_TELEGRAM_TOKEN/CHAT_ID)",
     )
+    parser.add_argument(
+        "--switch-when-full",
+        action="store_true",
+        help="Rotate to the next account when storages are full (stops after the last)",
+    )
 
     args = parser.parse_args()
 
@@ -167,6 +177,13 @@ def main():
 
     if args.max_loot:
         errs = validate_max_loot(config)
+        if errs:
+            for e in errs:
+                logger.error(" . {}", e)
+            sys.exit(1)
+
+    if args.switch_when_full:
+        errs = validate_max_loot(config) + validate_accounts(config)
         if errs:
             for e in errs:
                 logger.error(" . {}", e)

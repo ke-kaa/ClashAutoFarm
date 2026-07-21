@@ -8,6 +8,18 @@ from vision.preprocess import to_grayscale, upscale, threshold, crop, invert
 
 TESSERACT_CONFIG_SINGLE = "--psm 7 -c tessedit_char_whitelist=0123456789"
 TESSERACT_CONFIG_BLOCK = "--psm 6 -c tessedit_char_whitelist=0123456789"
+TESSERACT_CONFIG_TEXT = "--psm 7"
+
+
+def read_text(screen, region):
+    """Read a single line of text from a region. Returns the stripped string ('' on failure)."""
+    if not region:
+        return ""
+    cropped = crop(screen, region)
+    gray = to_grayscale(cropped)
+    scaled = upscale(gray, factor=3)
+    binary = threshold(scaled, val=180)
+    return pytesseract.image_to_string(binary, config=TESSERACT_CONFIG_TEXT).strip()
 
 
 def _parse_number(text):

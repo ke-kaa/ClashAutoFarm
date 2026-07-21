@@ -166,6 +166,33 @@ def check_storage_full(townhall_level, loot, config):
     return all(loot.get(r, -1) >= th.get(r, float("inf")) for r in required)
 
 
+def validate_accounts(config):
+    """Validate the accounts section needed for --switch-when-full."""
+    errors = []
+    acc = config.get("accounts")
+    if not acc:
+        return ["--switch-when-full set but config has no accounts section"]
+    for key, expected in [
+        ("settings_button", 2),
+        ("switch_button", 2),
+        ("scroll_drag", 4),
+        ("name_region", 4),
+    ]:
+        if key not in acc or not (isinstance(acc[key], list) and len(acc[key]) == expected):
+            errors.append(f"accounts.{key} must be a list of {expected} coordinates")
+    for key in ["row_height", "row_click_x", "visible_rows", "reload_wait", "max_scrolls"]:
+        if not isinstance(acc.get(key), (int, float)) or acc.get(key, -1) < 0:
+            errors.append(f"accounts.{key} must be a positive number")
+    rotation = acc.get("rotation")
+    if not isinstance(rotation, list) or not rotation:
+        errors.append("accounts.rotation must be a non-empty list")
+    else:
+        for i, entry in enumerate(rotation):
+            if not (isinstance(entry, dict) and "name" in entry):
+                errors.append(f"accounts.rotation[{i}] must have a 'name'")
+    return errors
+
+
 def validate_max_loot(config):
     """Validate config needed for --max-loot storage-full detection."""
     errors = []

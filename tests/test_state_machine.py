@@ -30,6 +30,18 @@ def _config():
         "regions": {},
         "thresholds": {10: {"gold_elixir_total": 600000, "dark_elixir": 2000}},
         "army_training": {"recipes_tab": [1, 2], "use_recipe_button": [3, 4]},
+        "accounts": {
+            "settings_button": [1, 1],
+            "switch_button": [2, 2],
+            "name_region": [10, 100, 200, 40],
+            "row_height": 120,
+            "row_click_x": 50,
+            "visible_rows": 4,
+            "reload_wait": 20,
+            "max_scrolls": 3,
+            "scroll_drag": [1, 2, 3, 4],
+            "rotation": [{"name": "GuardianDeity0"}, {"name": "GuardianDeityI"}],
+        },
         "treasure_hunt": {
             "claim_button": [1, 2],
             "advanced_clicks": [[1, 1]],
@@ -251,12 +263,13 @@ def test_battle_end_returns_home_when_no_chest(machine, monkeypatch):
     state_machine.actions.return_home.assert_called_once()
 
 
-def _limits(max_attacks=0, max_runtime=0, max_loot=False):
+def _limits(max_attacks=0, max_runtime=0, max_loot=False, switch_when_full=False):
     return SimpleNamespace(
         account_name="x",
         max_attacks=max_attacks,
         max_runtime=max_runtime,
         max_loot=max_loot,
+        switch_when_full=switch_when_full,
     )
 
 
@@ -282,3 +295,108 @@ def test_battle_end_no_stop_when_storage_not_full(machine, monkeypatch):
     machine.state = State.BATTLE_END
     machine._handle_battle_end()
     machine.stop_event.set.assert_not_called()
+
+
+# --- account switching -------------------------------------------------------
+
+def _switch_ready(machine):
+    machine.stop_event = MagicMock()
+
+
+def test_battle_end_switches_when_full_and_more_accounts(machine, monkeypatch):
+    monkeypatch.setattr(machine, "_wait_for", lambda *a, **k: (True, SCREEN))
+    monkeypatch.setattr(state_machine, "read_loot", lambda s, r: {"gold": 1, "elixir": 1, "dark_elixir": 1})
+    monkeypatch.setattr(state_machine, "check_storage_full", lambda *a: True)
+    machine.treasure_hunt = False
+    _switch_ready(machine)
+    machine.args = _limits(switch_when_full=True)
+    machine._rotation_idx = 0
+    machine.state = State.BATTLE_END
+    machine._handle_battle_end()
+    assert machine.state == State.SWITCHING_ACCOUNT
+    machine.stop_event.set.assert_not_called()
+
+
+def test_battle_end_stops_when_full_on_last_account(machine, monkeypatch):
+    monkeypatch.setattr(machine, "_wait_for", lambda *a, **k: (True, SCREEN))
+    monkeypatch.setattr(state_machine, "read_loot", lambda s, r: {"gold": 1, "elixir": 1, "dark_elixir": 1})
+    monkeypatch.setattr(state_machine, "check_storage_full", lambda *a: True)
+    machine.treasure_hunt = False
+    _switch_ready(machine)
+    machine.args = _limits(switch_when_full=True)
+    machine._rotation_idx = 1  # last of two accounts
+    machine.state = State.BATTLE_END
+    machine._handle_battle_end()
+    machine.stop_event.set.assert_called_once()
+
+
+def test_begin_switch_advances_and_enters_state(machine):
+    machine._begin_switch()
+    assert machine.state == State.SWITCHING_ACCOUNT
+    assert machine._rotation_idx == 1
+    assert machine._switch_phase == "open"
+
+
+def test_switch_open_opens_menu(machine):
+    _switch_ready(machine)
+    machine._rotation_idx = 1
+    machine._switch_phase = "open"
+    machine._handle_switching_account(SCREEN)
+    state_machine.actions.open_account_menu.assert_called_once()
+    assert machine._switch_phase == "await_card"
+
+
+def test_switch_selects_when_name_matched(machine, monkeypatch):
+    _switch_ready(machine)
+    machine._rotation_idx = 1  # target "GuardianDeityI"
+    machine._switch_phase = "select"
+    machine._switch_scrolls = 0
+    # row 0 = other account, row 1 = target
+    names = ["GuardianDeity0", "GuardianDeityI", "", ""]
+    monkeypatch.setattr(state_machine, "read_text", lambda s, region: names.pop(0))
+    machine._handle_switching_account(SCREEN)
+    state_machine.actions.click.assert_called_once()
+    assert machine._switch_phase == "reload"
+
+
+def test_switch_scrolls_when_name_not_found(machine, monkeypatch):
+    _switch_ready(machine)
+    machine._rotation_idx = 1
+    machine._switch_phase = "select"
+    machine._switch_scrolls = 0
+    monkeypatch.setattr(state_machine, "read_text", lambda s, region: "SomeoneElse")
+    machine._handle_switching_account(SCREEN)
+    state_machine.actions.scroll_card.assert_called_once()
+    assert machine._switch_scrolls == 1
+    assert machine._switch_phase == "select"
+
+
+def test_switch_stops_when_not_found_after_max_scrolls(machine, monkeypatch):
+    _switch_ready(machine)
+    machine._rotation_idx = 1
+    machine._switch_phase = "select"
+    machine._switch_scrolls = 3  # == max_scrolls
+    monkeypatch.setattr(state_machine, "read_text", lambda s, region: "SomeoneElse")
+    machine._handle_switching_account(SCREEN)
+    machine.stop_event.set.assert_called_once()
+
+
+def test_switch_verify_home_resets_and_goes_idle(machine):
+    _switch_ready(machine)
+    machine._rotation_idx = 1
+    machine._switch_phase = "verify"
+    machine._army_recipe_used = True
+    state_machine.tmpl.is_home_screen.return_value = True
+    machine._handle_switching_account(SCREEN)
+    assert machine.state == State.IDLE
+    assert machine.current_account_name == "GuardianDeityI"
+    assert machine._army_recipe_used is False
+
+
+def test_switch_verify_fail_stops(machine):
+    _switch_ready(machine)
+    machine._rotation_idx = 1
+    machine._switch_phase = "verify"
+    state_machine.tmpl.is_home_screen.return_value = False
+    machine._handle_switching_account(SCREEN)
+    machine.stop_event.set.assert_called_once()

@@ -47,7 +47,8 @@ class TelegramNotifier:
             return True
         with self._lock:
             now = time.monotonic()
-            if now - self._last_sent.get(key, 0) < self.cooldown:
+            last = self._last_sent.get(key)
+            if last is not None and now - last < self.cooldown:
                 return False
             self._last_sent[key] = now
             return True

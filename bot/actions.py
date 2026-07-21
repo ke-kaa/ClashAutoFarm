@@ -73,6 +73,19 @@ def use_army_recipe(cfg):
     click(*cfg["use_recipe_button"])
 
 
+def open_account_menu(cfg):
+    """Open Settings then the Switch button to reach the Switch ID account list."""
+    click(*cfg["settings_button"])
+    _random_delay()
+    click(*cfg["switch_button"])
+
+
+def scroll_card(cfg):
+    """Drag to scroll the Switch ID account list toward more entries."""
+    x1, y1, x2, y2 = cfg["scroll_drag"]
+    drag(x1, y1, x2, y2)
+
+
 def wait_for_match(seconds=8):
     """Wait for matchmaking to finish."""
     wait(seconds)

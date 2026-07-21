@@ -13,8 +13,12 @@ from bot import actions
 from bot.config_loader import load_config, meets_loot_threshold, check_storage_full
 from vision.capture import grab, save_screenshot
 from vision import templates as tmpl
-from vision.ocr import read_loot
+from vision.ocr import read_loot, read_text
 from utils.notifier import NullNotifier
+
+
+def _normalize_name(text):
+    return "".join(text.split()).lower()
 
 FAILURES_DIR = Path(__file__).resolve().parent.parent / "logs" / "failures"
 
@@ -26,6 +30,7 @@ STATE_TIMEOUTS = {
     "BATTLE_END": 30,
     "DISCONNECTED": 120,
     "RECONNECT_POPUP": 60,
+    "SWITCHING_ACCOUNT": 90,
 }
 
 
@@ -37,6 +42,7 @@ class State(Enum):
     BATTLE_END = auto()
     DISCONNECTED = auto()
     RECONNECT_POPUP = auto()
+    SWITCHING_ACCOUNT = auto()
 
 
 class StateMachine:
@@ -71,6 +77,18 @@ class StateMachine:
         self.attack_start_time = None
         self.battle_duration = None
         self._army_recipe_used = False
+        self._rotation = self.config.get("accounts", {}).get("rotation", [])
+        self._rotation_idx = 0
+        self._switch_phase = None
+        if self._rotation:
+            self.current_account_name = self._rotation[0]["name"]
+        elif args:
+            self.current_account_name = args.account_name
+        else:
+            self.current_account_name = None
+
+    def _account_name(self):
+        return self.current_account_name or "unknown"
 
     def transition(self, new_state):
         """Transition to a new state."""
@@ -139,6 +157,8 @@ class StateMachine:
             self._handle_attacking(screen)
         elif self.state == State.BATTLE_END:
             self._handle_battle_end()
+        elif self.state == State.SWITCHING_ACCOUNT:
+            self._handle_switching_account(screen)
 
     def _handle_idle(self):
         """IDLE → click attack → FINDING_MATCH."""
@@ -192,7 +212,7 @@ class StateMachine:
                 "raid_summary",
                 {
                     "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "account_name": self.args.account_name if self.args else "unknown",
+                    "account_name": self._account_name(),
                     "attacked": False,
                     "townhall_level": self.townhall_level,
                     "attack_duration_ms": 0,
@@ -310,7 +330,7 @@ class StateMachine:
                 "raid_summary",
                 {
                     "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "account_name": self.args.account_name if self.args else "unknown",
+                    "account_name": self._account_name(),
                     "attacked": True,
                     "townhall_level": self.townhall_level,
                     "attack_duration_ms": (
@@ -343,14 +363,17 @@ class StateMachine:
             poll=det["poll_interval"],
         )
         if ok and self.args and self.stop_event:
-            if self.args.max_loot:
+            switch_when_full = getattr(self.args, "switch_when_full", False)
+            if self.args.max_loot or switch_when_full:
                 regions = self.config.get("regions", {})
                 loot_region_home_village = regions.get("loot_region_home_village", {})
                 loot = read_loot(screen, loot_region_home_village)
-                storage_full = check_storage_full(self.townhall_level, loot, self.config)
-                if storage_full:
+                if check_storage_full(self.townhall_level, loot, self.config):
+                    self.notifier.send("Storages full", key="storages_full")
+                    if switch_when_full and self._rotation_idx + 1 < len(self._rotation):
+                        self._begin_switch()
+                        return
                     logger.info("Storages full, stopping")
-                    self.notifier.send("🏦 Storages full — stopping", key="storages_full")
                     self.stop_event.set()
 
             if self.args.max_attacks and self.total_attacked >= self.args.max_attacks:
@@ -387,6 +410,65 @@ class StateMachine:
         else:
             logger.warning("Network cleared but home village not confirmed — waiting")
             actions.wait(self.config["timings"]["reconnect_wait"])
+
+    def _begin_switch(self):
+        """Advance to the next account in the rotation and enter SWITCHING_ACCOUNT."""
+        self._rotation_idx += 1
+        self._switch_phase = "open"
+        self._switch_scrolls = 0
+        self.transition(State.SWITCHING_ACCOUNT)
+
+    def _find_account_row(self, screen, acc, target):
+        """OCR each visible row's name; return the (x, y) click point of the match, else None."""
+        x, y0, w, h = acc["name_region"]
+        wanted = _normalize_name(target)
+        for i in range(acc["visible_rows"]):
+            region = [x, y0 + i * acc["row_height"], w, h]
+            if _normalize_name(read_text(screen, region)) == wanted:
+                return (acc["row_click_x"], y0 + i * acc["row_height"] + h // 2)
+        return None
+
+    def _handle_switching_account(self, screen):
+        """Tick-driven account switch: open card → OCR-select row → reload → verify home."""
+        acc = self.config["accounts"]
+        target = self._rotation[self._rotation_idx]["name"]
+
+        if self._switch_phase == "open":
+            actions.open_account_menu(acc)
+            self._switch_phase = "await_card"
+
+        elif self._switch_phase == "await_card":
+            if tmpl.is_switch_id_card(screen, self.templates):
+                self._switch_phase = "select"
+
+        elif self._switch_phase == "select":
+            point = self._find_account_row(screen, acc, target)
+            if point:
+                actions.click(*point)
+                self._switch_phase = "reload"
+                self._phase_deadline = time.time() + acc["reload_wait"]
+            elif self._switch_scrolls < acc["max_scrolls"]:
+                actions.scroll_card(acc)
+                self._switch_scrolls += 1
+            else:
+                logger.warning("Account '{}' not found in switch list", target)
+                self._dump_failure_screenshot(screen, reason="account_not_found")
+                self.stop_event.set()
+
+        elif self._switch_phase == "reload":
+            if time.time() >= self._phase_deadline:
+                self._switch_phase = "verify"
+
+        elif self._switch_phase == "verify":
+            if tmpl.is_home_screen(screen, self.templates):
+                logger.info("Switched to account '{}'", target)
+                self.current_account_name = target
+                self._army_recipe_used = False
+                self.transition(State.IDLE)
+            else:
+                logger.warning("Switch to '{}' not confirmed", target)
+                self._dump_failure_screenshot(screen, reason="switch_unverified")
+                self.stop_event.set()
 
     def _wait_for(self, predicate, timeout, poll=0.5):
         """Poll grab()+predicate until True or timeout. Returns (ok: bool, last_screen)."""

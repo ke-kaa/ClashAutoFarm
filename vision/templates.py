@@ -49,6 +49,11 @@ def is_claim_reward(screen, templates, threshold=0.3):
     return find(screen, templates["claim_reward"], threshold=threshold)
 
 
+def is_switch_id_card(screen, templates, threshold=0.3):
+    """Check if the Switch ID account-list card is visible."""
+    return find(screen, templates["switch_id_card"], threshold=threshold)
+
+
 def match_score(screen, template):
     """Return the best template-match score (0..1) over the screen."""
     screen_edges = cv2.Canny(screen, 50, 150)
@@ -56,4 +61,16 @@ def match_score(screen, template):
     res = cv2.matchTemplate(screen_edges, template_edges, cv2.TM_CCOEFF_NORMED)
     _, max_val, _, _ = cv2.minMaxLoc(res)
     return max_val
+
+
+def locate(screen, template, threshold=0.3):
+    """Return the (x, y) center of the best template match >= threshold, else None."""
+    screen_edges = cv2.Canny(screen, 50, 150)
+    template_edges = cv2.Canny(template, 50, 150)
+    res = cv2.matchTemplate(screen_edges, template_edges, cv2.TM_CCOEFF_NORMED)
+    _, max_val, _, max_loc = cv2.minMaxLoc(res)
+    if max_val < threshold:
+        return None
+    h, w = template_edges.shape[:2]
+    return (max_loc[0] + w // 2, max_loc[1] + h // 2)
 
