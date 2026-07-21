@@ -16,7 +16,7 @@ from loguru import logger
 from pynput import keyboard
 
 from vision import templates
-from bot.config_loader import load_and_validate, validate_treasure_hunt
+from bot.config_loader import load_and_validate, validate_treasure_hunt, validate_max_loot
 from bot import state_machine
 from bot.state_machine import StateMachine
 from bot.dry_run import DryRunActions
@@ -160,6 +160,13 @@ def main():
     if args.treasure_hunt:
         logger.info("Treasure hunt claim handling: ENABLED")
         errs = validate_treasure_hunt(config)
+        if errs:
+            for e in errs:
+                logger.error(" . {}", e)
+            sys.exit(1)
+
+    if args.max_loot:
+        errs = validate_max_loot(config)
         if errs:
             for e in errs:
                 logger.error(" . {}", e)

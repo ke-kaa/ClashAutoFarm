@@ -112,6 +112,17 @@ def validate_config(config):
             elif not isinstance(army_training[key], list) or len(army_training[key]) != 2:
                 errors.append(f"army_training.{key} must be a list of [x, y]")
 
+    if "storage_capacities" in config:
+        for level, cap in config["storage_capacities"].items():
+            if not isinstance(cap, dict):
+                errors.append(f"storage_capacities.{level} must be a dict")
+                continue
+            for key in ["gold", "elixir", "dark_elixir"]:
+                if key not in cap:
+                    errors.append(f"storage_capacities.{level} missing '{key}'")
+                elif not isinstance(cap[key], (int, float)) or cap[key] < 0:
+                    errors.append(f"storage_capacities.{level}.{key} must be a positive number")
+
     return errors
 
 
@@ -142,17 +153,34 @@ def meets_loot_threshold(townhall_level, loot, config):
     return (loot["gold"] + loot["elixir"]) >= th["gold_elixir_total"]
 
 
+DEFAULT_FULL_REQUIRES = ["gold", "elixir", "dark_elixir"]
+
+
 def check_storage_full(townhall_level, loot, config):
     """Check if loot has reached the maximum threshold for a given townhall level."""
     th = config.get("storage_capacities", {}).get(townhall_level)
     if not th:
         return False
 
-    return (
-        loot["dark_elixir"] >= th["dark_elixir"]
-        and loot["gold"] >= th["gold"]
-        and loot["elixir"] >= th["elixir"]
-    )
+    required = config.get("farming", {}).get("full_requires", DEFAULT_FULL_REQUIRES)
+    return all(loot.get(r, -1) >= th.get(r, float("inf")) for r in required)
+
+
+def validate_max_loot(config):
+    """Validate config needed for --max-loot storage-full detection."""
+    errors = []
+    if "storage_capacities" not in config:
+        errors.append("--max-loot set but config has no storage_capacities section")
+    region = config.get("regions", {}).get("loot_region_home_village")
+    if not (isinstance(region, list) and len(region) == 4):
+        errors.append("regions.loot_region_home_village must be [x, y, w, h] for --max-loot")
+    required = config.get("farming", {}).get("full_requires")
+    if required is not None:
+        valid = {"gold", "elixir", "dark_elixir"}
+        for r in required:
+            if r not in valid:
+                errors.append(f"farming.full_requires has unknown resource '{r}'")
+    return errors
 
 
 def validate_treasure_hunt(config):

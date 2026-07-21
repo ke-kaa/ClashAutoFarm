@@ -8,6 +8,7 @@ from bot.config_loader import (
     validate_config,
     validate_treasure_hunt,
     meets_loot_threshold,
+    check_storage_full,
 )
 
 
@@ -103,6 +104,41 @@ def test_below_threshold(config):
 def test_unknown_townhall_level_is_false(config):
     loot = {"gold": 9_000_000, "elixir": 9_000_000, "dark_elixir": 9_000_000}
     assert meets_loot_threshold(99, loot, config) is False
+
+
+# --- check_storage_full ------------------------------------------------------
+
+def _storage_config(full_requires=None):
+    cfg = {"storage_capacities": {10: {"gold": 100, "elixir": 100, "dark_elixir": 100}}}
+    if full_requires is not None:
+        cfg["farming"] = {"full_requires": full_requires}
+    return cfg
+
+
+def test_storage_full_all_three_capped():
+    loot = {"gold": 100, "elixir": 100, "dark_elixir": 100}
+    assert check_storage_full(10, loot, _storage_config()) is True
+
+
+def test_storage_not_full_when_dark_below_default():
+    loot = {"gold": 100, "elixir": 100, "dark_elixir": 50}
+    assert check_storage_full(10, loot, _storage_config()) is False
+
+
+def test_storage_full_gold_elixir_only_knob():
+    loot = {"gold": 100, "elixir": 100, "dark_elixir": 50}
+    cfg = _storage_config(full_requires=["gold", "elixir"])
+    assert check_storage_full(10, loot, cfg) is True
+
+
+def test_storage_full_unknown_townhall_is_false():
+    loot = {"gold": 999, "elixir": 999, "dark_elixir": 999}
+    assert check_storage_full(99, loot, _storage_config()) is False
+
+
+def test_storage_full_ocr_failure_is_false():
+    loot = {"gold": -1, "elixir": 100, "dark_elixir": 100}
+    assert check_storage_full(10, loot, _storage_config()) is False
 
 
 # --- validate_treasure_hunt --------------------------------------------------

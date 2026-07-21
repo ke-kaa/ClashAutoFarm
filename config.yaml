@@ -118,6 +118,9 @@ army_training:
 notify:
   heartbeat_interval: 3600
 
+farming:
+  full_requires: [gold, elixir, dark_elixir]
+
 treasure_hunt:
   claim_button: [765, 865]
   advanced_clicks: 

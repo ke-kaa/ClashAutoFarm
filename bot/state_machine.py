@@ -349,6 +349,8 @@ class StateMachine:
                 loot = read_loot(screen, loot_region_home_village)
                 storage_full = check_storage_full(self.townhall_level, loot, self.config)
                 if storage_full:
+                    logger.info("Storages full, stopping")
+                    self.notifier.send("🏦 Storages full — stopping", key="storages_full")
                     self.stop_event.set()
 
             if self.args.max_attacks and self.total_attacked >= self.args.max_attacks:

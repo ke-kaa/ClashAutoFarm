@@ -249,3 +249,36 @@ def test_battle_end_returns_home_when_no_chest(machine, monkeypatch):
     machine._handle_battle_end()
     state_machine.actions.claim_treasure_reward.assert_not_called()
     state_machine.actions.return_home.assert_called_once()
+
+
+def _limits(max_attacks=0, max_runtime=0, max_loot=False):
+    return SimpleNamespace(
+        account_name="x",
+        max_attacks=max_attacks,
+        max_runtime=max_runtime,
+        max_loot=max_loot,
+    )
+
+
+def test_battle_end_stops_when_storage_full(machine, monkeypatch):
+    monkeypatch.setattr(machine, "_wait_for", lambda *a, **k: (True, SCREEN))
+    monkeypatch.setattr(state_machine, "read_loot", lambda s, r: {"gold": 1, "elixir": 1, "dark_elixir": 1})
+    monkeypatch.setattr(state_machine, "check_storage_full", lambda *a: True)
+    machine.treasure_hunt = False
+    machine.stop_event = MagicMock()
+    machine.args = _limits(max_loot=True)
+    machine.state = State.BATTLE_END
+    machine._handle_battle_end()
+    machine.stop_event.set.assert_called_once()
+
+
+def test_battle_end_no_stop_when_storage_not_full(machine, monkeypatch):
+    monkeypatch.setattr(machine, "_wait_for", lambda *a, **k: (True, SCREEN))
+    monkeypatch.setattr(state_machine, "read_loot", lambda s, r: {"gold": 1, "elixir": 1, "dark_elixir": 1})
+    monkeypatch.setattr(state_machine, "check_storage_full", lambda *a: False)
+    machine.treasure_hunt = False
+    machine.stop_event = MagicMock()
+    machine.args = _limits(max_loot=True)
+    machine.state = State.BATTLE_END
+    machine._handle_battle_end()
+    machine.stop_event.set.assert_not_called()
