@@ -122,18 +122,32 @@ farming:
   full_requires: [gold, elixir, dark_elixir]
 
 accounts:
-  settings_button: [0, 0]
-  switch_button: [0, 0]
+  settings_button: [1467, 789]
+  switch_button: [978, 311]
   name_region: [0, 0, 0, 0]
   row_height: 0
   row_click_x: 0
   visible_rows: 4
   reload_wait: 20
-  max_scrolls: 3
-  scroll_drag: [0, 0, 0, 0]
+  max_scrolls: 5
+  scroll_drag: [1271, 544, 1280, 164]
   rotation:
     - name: GuardianDeity0
     - name: GuardianDeityI
+    - name: GuardianDeityIII
+    - name: GuardianDeityII
+    - name: GuardianDeityiv
+    - name: GuardianDeityV
+    - name: CuteRedKEK
+    - name: MindfulLavishKAKU
+    - name: GuardianDeityVII 
+    - name: VirtualRip
+    - name: LovedHihfi
+    - name: SarcasticScaryNiha
+    - name: GGTouu
+    - name: HyoukiTeng
+    - name: ShinyPuraji
+    - name: MightyParahe
 
 treasure_hunt:
   claim_button: [765, 865]
