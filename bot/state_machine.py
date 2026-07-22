@@ -360,17 +360,60 @@ class StateMachine:
         )
         if ok and self.args and self.stop_event:
             switch_when_full = getattr(self.args, "switch_when_full", False)
+            logger.info(
+                "Switch decision: home confirmed. flags max_loot={} switch_when_full={} "
+                "account='{}' TH={} rotation_idx={}/{}",
+                self.args.max_loot,
+                switch_when_full,
+                self._account_name(),
+                self.townhall_level,
+                self._rotation_idx,
+                len(self._rotation),
+            )
             if self.args.max_loot or switch_when_full:
                 regions = self.config.get("regions", {})
                 loot_region_home_village = regions.get("loot_region_home_village", {})
                 loot = read_loot(screen, loot_region_home_village)
-                if check_storage_full(self.townhall_level, loot, self.config):
+                is_full = check_storage_full(self.townhall_level, loot, self.config)
+                logger.info(
+                    "Switch decision: home-village loot gold={} elixir={} dark={} → storages_full={}",
+                    loot.get("gold"),
+                    loot.get("elixir"),
+                    loot.get("dark_elixir"),
+                    is_full,
+                )
+                if is_full:
                     self.notifier.send("Storages full", key="storages_full")
-                    if switch_when_full and self._rotation_idx + 1 < len(self._rotation):
+                    has_next = self._rotation_idx + 1 < len(self._rotation)
+                    if switch_when_full and has_next:
+                        next_name = self._rotation[self._rotation_idx + 1]["name"]
+                        logger.info(
+                            "Switch decision: SWITCHING → next account '{}' (idx {})",
+                            next_name,
+                            self._rotation_idx + 1,
+                        )
                         self._begin_switch()
                         return
-                    logger.info("Storages full, stopping")
+                    if switch_when_full and not has_next:
+                        logger.info(
+                            "Switch decision: storages full but no next account in rotation "
+                            "(idx {}/{}) — stopping",
+                            self._rotation_idx,
+                            len(self._rotation),
+                        )
+                    else:
+                        logger.info(
+                            "Switch decision: storages full and switch_when_full disabled — stopping"
+                        )
                     self.stop_event.set()
+                else:
+                    logger.info(
+                        "Switch decision: storages not full — continuing to farm"
+                    )
+            else:
+                logger.debug(
+                    "Switch decision: neither max_loot nor switch_when_full set — no full-check"
+                )
 
             if self.args.max_attacks and self.total_attacked >= self.args.max_attacks:
                 logger.info("Max attacks reached ({}), stopping", self.args.max_attacks)
