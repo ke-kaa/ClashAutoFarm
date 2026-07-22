@@ -37,7 +37,10 @@ def _config():
             "reload_wait": 20,
             "max_scrolls": 3,
             "scroll_drag": [1, 2, 3, 4],
-            "rotation": [{"name": "GuardianDeity0"}, {"name": "GuardianDeityI"}],
+            "rotation": [
+                {"name": "GuardianDeity0", "townhall_level": 11},
+                {"name": "GuardianDeityI", "townhall_level": 13},
+            ],
         },
         "treasure_hunt": {
             "claim_button": [1, 2],
@@ -385,6 +388,7 @@ def test_switch_verify_home_resets_and_goes_idle(machine):
     machine._handle_switching_account(SCREEN)
     assert machine.state == State.IDLE
     assert machine.current_account_name == "GuardianDeityI"
+    assert machine.townhall_level == 13  # updated to the switched-in account's TH
     assert machine._army_recipe_used is False
 
 

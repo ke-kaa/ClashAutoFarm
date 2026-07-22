@@ -190,6 +190,10 @@ def validate_accounts(config):
         for i, entry in enumerate(rotation):
             if not (isinstance(entry, dict) and "name" in entry):
                 errors.append(f"accounts.rotation[{i}] must have a 'name'")
+                continue
+            th = entry.get("townhall_level")
+            if not isinstance(th, int) or not (8 <= th <= 18):
+                errors.append(f"accounts.rotation[{i}].townhall_level must be an int 8-18")
     return errors
 
 

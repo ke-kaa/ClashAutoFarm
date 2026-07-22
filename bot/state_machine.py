@@ -448,7 +448,9 @@ class StateMachine:
         elif self._switch_phase == "verify":
             if tmpl.is_home_screen(screen, self.templates):
                 logger.info("Switched to account '{}'", target)
+                entry = self._rotation[self._rotation_idx]
                 self.current_account_name = target
+                self.townhall_level = entry.get("townhall_level", self.townhall_level)
                 self._army_recipe_used = False
                 self.transition(State.IDLE)
             else:

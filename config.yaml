@@ -128,24 +128,41 @@ accounts:
   reload_wait: 20
   max_scrolls: 5
   scroll_drag: [1271, 544, 1280, 164]
+  # townhall_level per account drives the scouting loot threshold and storage-full
+  # check after a switch. Set each to the account's real TH (8-18).
   rotation:
     - name: GuardianDeityo
+      townhall_level: 17
     - name: GuardianDeityl
+      townhall_level: 15
     - name: GuardianDeitylll
+      townhall_level: 15
     - name: guardiandeityll
+      townhall_level: 14
     - name: guardiandeitylv
+      townhall_level: 13
     - name: guardiandeityv
+      townhall_level: 13
     - name: cuteredkek
+      townhall_level: 12
     - name: mindfullavishkaku
-    - name: guardiandeityvil 
+      townhall_level: 11
+    - name: guardiandeityvil
+      townhall_level: 9
     - name: virtualrip
+      townhall_level: 9
     - name: LovedHihfi
+      townhall_level: 9
     - name: sarcasticscarynih
+      townhall_level: 9
     - name: GGTouu
+      townhall_level: 9
     - name: HyoukiTeng
+      townhall_level: 9
     - name: ShinyPuraji
+      townhall_level: 9
     - name: MightyParahe
-
+      townhall_level: 9
 treasure_hunt:
   claim_button: [765, 865]
   advanced_clicks: 
