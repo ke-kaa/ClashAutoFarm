@@ -124,23 +124,23 @@ farming:
 accounts:
   settings_button: [1467, 789]
   switch_button: [978, 311]
-  card_region: [0, 0, 0, 0]
+  card_region: [1050, 524, 389, 460]
   reload_wait: 20
   max_scrolls: 5
   scroll_drag: [1271, 544, 1280, 164]
   rotation:
-    - name: GuardianDeity0
-    - name: GuardianDeityI
-    - name: GuardianDeityIII
-    - name: GuardianDeityII
-    - name: GuardianDeityiv
-    - name: GuardianDeityV
-    - name: CuteRedKEK
-    - name: MindfulLavishKAKU
-    - name: GuardianDeityVII 
-    - name: VirtualRip
+    - name: GuardianDeityo
+    - name: GuardianDeityl
+    - name: GuardianDeitylll
+    - name: guardiandeityll
+    - name: guardiandeitylv
+    - name: guardiandeityv
+    - name: cuteredkek
+    - name: mindfullavishkaku
+    - name: guardiandeityvil 
+    - name: virtualrip
     - name: LovedHihfi
-    - name: SarcasticScaryNiha
+    - name: sarcasticscarynih
     - name: GGTouu
     - name: HyoukiTeng
     - name: ShinyPuraji
